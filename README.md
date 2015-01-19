@@ -12,7 +12,7 @@ Game designed and coded by [Sarah Gould](http://www.zenzoa.com)
 
 - circuit & unit731 by alg0rh1tm
 
-** Sounds from [freesound.org](http://www.freesound.org)**
+**Sounds from [freesound.org](http://www.freesound.org)**
 
 - btn402 by junggle
 - laser by fins
