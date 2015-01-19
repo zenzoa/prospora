@@ -62,6 +62,15 @@ function love.load()
 	buttonSound = love.audio.newSource('assets/junggle-btn402.mp3', 'static')
 	buttonSound:setVolume(0.1)
 	
+	-- setup tutorial images
+	tutorialImage1 = love.graphics.newImage('assets/tutorial-1.png')
+	tutorialImage2 = love.graphics.newImage('assets/tutorial-2.png')
+	tutorialImage3 = love.graphics.newImage('assets/tutorial-3.png')
+	tutorialImage4 = love.graphics.newImage('assets/tutorial-4.png')
+	tutorialImage5 = love.graphics.newImage('assets/tutorial-5.png')
+	tutorialImage6 = love.graphics.newImage('assets/tutorial-6.png')
+	tutorialImage7 = love.graphics.newImage('assets/tutorial-7.png')
+	
 	screenMode:load()
 end
 
