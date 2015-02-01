@@ -4,7 +4,7 @@ function newPlayer ()
 	local p = {}
 	
 	p.meme = newMeme()
-	p.meme.color = {r=255, g=255, b=255}
+	p.meme.color = { r=50, g=186, b=250 }
 	p.selectedPlanet = nil
 	p.homeWorld = nil
 	p.homeUnderAttack = false
@@ -34,7 +34,7 @@ function drawHalo ()
 			d = vNormalize(d)
 			d = vMul(d, haloRadius)
 			d = vAdd(d, p.location)
-			love.graphics.circle('fill', d.x * ZOOM, d.y * ZOOM, UNIT_RADIUS, SEGMENTS)
+			drawFilledCircle(d.x, d.y, UNIT_RADIUS/ZOOM)
 		end
 		
 	else

@@ -5,10 +5,20 @@ function newMeme ()
 	m.con = randomRealBetween(0, 1)
 	m.fec = randomRealBetween(0, 1)
 	
-	m.color = {r = randomIntegerBetween(55, 255),
+	local hue = randomRealBetween(0,240)
+	if hue>180 then hue=hue+120 end
+	hue = hue*255/360
+	local sat = randomRealBetween(100,255)
+	local lit = randomRealBetween(100,200)
+	
+	m.color = {}
+	m.color.r, m.color.g, m.color.b = HSL(hue, sat, lit)
+	
+	--[[m.color = {
+		r = randomIntegerBetween(55, 255),
 		g = randomIntegerBetween(55, 255),
 		b = randomIntegerBetween(55, 255)
-	}
+	}]]--
 	
 	function m:adjustGenes ()
 		local t = m.agg + m.con + m.fec
@@ -124,16 +134,14 @@ function newUnit (planet, meme)
 	end
 	
 	function u:draw ()
-		local l = vMul(self.location, ZOOM)
 		self.meme:setToMyColor()
-		local r = UNIT_RADIUS * ZOOM
 		if self.growing then
-			love.graphics.circle('fill', l.x, l.y, r * self.animationCounter, SEGMENTS)
+			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS * self.animationCounter)
 		elseif self.dying then
 			love.graphics.setColor(255, 255, 255, 255 * (1 - self.animationCounter))
-			love.graphics.circle('fill', l.x, l.y, r * self.animationCounter * 4, SEGMENTS)
+			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS * self.animationCounter * 4)
 			self.meme:setToMyColor()
-			love.graphics.circle('fill', l.x, l.y, r * (1 - self.animationCounter), SEGMENTS)
+			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS * (1 - self.animationCounter))
 			
 			-- alert player to attacks on their home planet
 			if self.planet == human.homeWorld and self.meme == human.meme then
@@ -146,11 +154,11 @@ function newUnit (planet, meme)
 			
 		elseif self.flying and self.flyer ~= nil then
 			if self.flyer.attackDrone then
-				love.graphics.circle('fill', l.x, l.y, r, SEGMENTS)
+				drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS)
 			end
 			self.flyer:draw()
 		elseif not self.waiting then
-			love.graphics.circle('fill', l.x, l.y, r, SEGMENTS)
+			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS)
 		end
 	end
 	

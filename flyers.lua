@@ -63,7 +63,7 @@ function newFlyer (location, fixedDestination, origin, destination, color)
 		else
 			love.graphics.setColor(self.color.r, self.color.g, self.color.b)
 		end
-		love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, UNIT_RADIUS*0.8*ZOOM, SEGMENTS)
+		drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS*0.8)
 	end
 	
 	function f:setVelocityTo (location)

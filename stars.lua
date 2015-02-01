@@ -32,7 +32,8 @@ function newStar ()
 	
 	function s:draw ()
 		love.graphics.setColor(self.glitter, self.glitter, self.glitter)
-		love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, 0.5)
+		--love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, 1)
+		love.graphics.point(self.location.x*ZOOM, self.location.y*ZOOM)
 	end
 	
 	return s

@@ -54,9 +54,9 @@ function newSun (location, radius)
 	
 	function s:draw ()
 		love.graphics.setColor(255, 255, 255, 177)
-		love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, (self.radius+self.corona)*ZOOM, SEGMENTS*2)
+		drawFilledCircle(self.location.x, self.location.y, self.radius+self.corona)
 		love.graphics.setColor(255, 255, 255, 255)
-		love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, self.radius*ZOOM, SEGMENTS*2)
+		drawFilledCircle(self.location.x, self.location.y, self.radius)
 	end
 	
 	s.newOrbit = function (self)

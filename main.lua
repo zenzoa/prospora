@@ -22,7 +22,7 @@ FPS = 60
 TURN_TIME = 30.0
 ZOOM = 0.5
 UNIT_RADIUS = 5
-SEGMENTS = 30
+SEGMENTS = 60
 
 UNIVERSE_SIZE = 10
 WORLD_SIZE = {width = 0, height = 0}
@@ -40,9 +40,10 @@ function love.load()
 	
 	-- Setup window
 	love.window.setTitle("Prospora")
-	love.window.setMode(600, 600, {fsaa=16})
+	love.window.setMode(600, 600)
 	love.graphics.setBackgroundColor(51, 51, 51)
 	love.graphics.setLineStyle('smooth')
+	love.graphics.setPointStyle('rough')
 	
 	-- setup fonts
 	font = love.graphics.newFont('assets/furore.otf', 20)
@@ -139,4 +140,12 @@ end
 function adjustOffset ()
 	OFFSET.x = math.min(0, math.max(-WORLD_SIZE.width * ZOOM + love.graphics.getWidth(), OFFSET.x))
 	OFFSET.y = math.min(0, math.max(-WORLD_SIZE.height * ZOOM + love.graphics.getHeight(), OFFSET.y))
+end
+
+--
+
+function drawFilledCircle(x, y, r)
+	love.graphics.circle('fill', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)
+	love.graphics.setLineWidth(1)
+	love.graphics.circle('line', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)
 end

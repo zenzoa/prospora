@@ -94,7 +94,7 @@ function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
 		else
 			love.graphics.setColor(100, 100, 100)
 		end
-		love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, self.radius*ZOOM, SEGMENTS)
+		drawFilledCircle(self.location.x, self.location.y, self.radius)
 		
 		-- draw memes
 		drawUnits(self)

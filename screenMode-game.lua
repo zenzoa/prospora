@@ -111,7 +111,7 @@ function gameMode:draw ()
 	else
 		love.graphics.setColor(0, 170, 250, 150)
 	end
-	love.graphics.circle('fill', self.handlePause.x, self.handlePause.y, 20, SEGMENTS)
+	drawFilledCircle(self.handlePause.x/ZOOM, self.handlePause.y/ZOOM, 20/ZOOM)
 	love.graphics.setColor(255, 255, 255)
 	love.graphics.setLineWidth(5)
 	love.graphics.line(self.handlePause.x-6, self.handlePause.y-9, self.handlePause.x-6, self.handlePause.y+9)
