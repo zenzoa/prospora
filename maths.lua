@@ -41,7 +41,11 @@ function randomElement(t)
 end
 
 function tableSize(t)
-	return table.getn(t)
+	local size = 0
+	for _,v in pairs(t) do
+		if v ~= nil then size = size + 1 end
+	end
+	return size
 end
 
 function appendToTable(t1, t2)

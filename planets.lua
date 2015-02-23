@@ -67,7 +67,7 @@ function newPlanet (sun)
 			for i=1, self.maxSpores do
 				table.insert(self.spores, newSpore(self, self.startingColony, i))
 			end
-			p.radius = p.maxSpores * UNIT_RADIUS / PI
+			self.radius = self.maxSpores * UNIT_RADIUS / PI
 		end
 	end
 	
@@ -121,6 +121,8 @@ function newPlanet (sun)
 		for _, spore in pairs(self.sporesOffPlanet) do
 			spore:draw()
 		end
+		
+		love.graphics.print(tableSize(self.spores), (self.location.x+self.radius)*ZOOM, (self.location.y+self.radius)*ZOOM)
 	end
 	
 	function p:getSporeLocation (mySpore)
@@ -213,41 +215,30 @@ function newPlanet (sun)
 	end
 	
 	function p:insertSpore (toPosition, newSpore)
-		for _, spore in pairs(self.spores) do
-			if spore.position >= toPosition then
-				spore.position = spore.position + 1
-			end
-		end
-		table.insert(p.spores, toPosition, newSpore)
-		newSpore.position = toPosition
-	end
-	
-	function p:removeSpore (sporeToRemove)
-		for _, spore in pairs(self.spores) do
-			if spore.position > sporeToRemove.position then
-				spore.position = spore.position - 1
-			end
-		end
+		table.insert(self.spores, toPosition, newSpore)
+		self:cleanupSpores()
 	end
 	
 	function p:cleanupSpores ()
 		local cleanSporeList = {}
-		for _, spore in pairs(self.spores) do
+		for _,spore in pairs(self.spores) do
 			if spore.state == 'exploring' and spore.width == 0 then
-				self:removeSpore(spore)
 				table.insert(self.sporesOffPlanet, spore)
 			elseif spore.state == 'dead' or spore.planet ~= self then
-				self:removeSpore(spore)
+				--
 			else
 				table.insert(cleanSporeList, spore)
 			end
 		end
+		for i,spore in pairs(cleanSporeList) do
+			spore.position = i
+		end
 		self.spores = cleanSporeList
 		
 		local cleanSporeOffPlanetList = {}
-		for _, spore in pairs(self.sporesOffPlanet) do
+		for _,spore in pairs(self.sporesOffPlanet) do
 			if spore.state == 'dead' or spore.planet ~= self then
-				self:removeSpore(spore)
+				--
 			else
 				table.insert(cleanSporeOffPlanetList, spore)
 			end
@@ -263,9 +254,7 @@ end
 
 --[[
 
-function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
-
-	initUnits(p, meme)
+function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)\
 	
 	function p:checkHomeWorld ()
 		-- check to see if homeworld has been emptied of its original meme
@@ -289,20 +278,6 @@ function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
 				end
 			end
 		end
-	end
-	
-	function p:getFriends (meme)
-		local friends = {}
-		for i=1, self.unitSpaces do
-			if self.units[i] and not self.units[i]:isBusy() and meme == self.units[i].meme then
-				table.insert(friends, self.units[i])
-			end
-		end
-		return friends	
-	end
-	
-	function p:addFlyer (newFlyer)
-		table.insert(self.flyers, newFlyer)
 	end
 end
 

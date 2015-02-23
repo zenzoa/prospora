@@ -5,6 +5,7 @@ function newSpore (planet, colony, position)
 	s.colony = colony
 	s.state = 'ready'
 	s.position = position
+	s.location = planet.location
 	s.rotationAngle = 0
 	s.width = 1
 	
@@ -12,7 +13,7 @@ function newSpore (planet, colony, position)
 	
 	function s:update ()
 		
-		if self.state ~= 'exploring' then
+		if self.state ~= 'exploring' and self.state ~= 'placeholder' then
 			self.location = self.planet:getSporeLocation(self)
 		end
 		
@@ -28,10 +29,10 @@ function newSpore (planet, colony, position)
 					if isAttacking then
 						--self:attackAbroad()
 					else
-						--self:spawnAbroad()
+						self:spawnAbroad()
 					end
 				elseif isAttacking then
-					self:attackLocally()
+					--self:attackLocally()
 				else
 					self:spawnLocally()
 				end
@@ -40,23 +41,33 @@ function newSpore (planet, colony, position)
 		elseif self.state == 'spawningLocally' then
 			s:updateAnimationCounter()
 			-- splitting animation, increase self.width
-			self.width = 1-self.animationCounter
+			self.width = 2 - self.animationCounter
 			if self.animationCounter <= 0 then
 				self.child.state = 'ready'
 				self.child.width = 1
 				self.child.rotationAngle = 0
+				self.state = 'ready'
 				self.width = 1
 				self.rotationAngle = 0
-				self.state = 'ready'
 			end
 			
 		elseif self.state == 'spawningAbroad' then
 			s:updateAnimationCounter()
 			-- splitting animation, increase self.width;
 			-- then show child flying across connection while self.width returns to normal and child.width increases
-			if self.animationCounter <= 0 then
+			if self.animationCounter > 1 then
+				self.width = 1.5 - self.animationCounter
+			elseif self.animationCounter > 0 then
+				self.width = 1 + self.animationCounter
+				self.child.width = 1 - self.animationCounter
+				local d = vSub(self.child.planet.location, self.planet.location)
+				local totalDistance = vMag(d)
+				d = vNormalize(d)
+				self.child.location = vMul(d, totalDistance * (1 - self.animationCounter))
+				self.child.location = vAdd(self.child.location, self.planet.location)
+			else
 				self.child.state = 'ready'
-				self.child = nil
+				self.child.width = 1
 				self.state = 'ready'
 			end
 			
@@ -108,7 +119,9 @@ function newSpore (planet, colony, position)
 				table.insert(planetConnections, newConnection(self.planet, planet))
 				self.state = 'dead'
 			end
-		elseif self.state == 'dead' then
+		end
+		
+		if self.state == 'dead' then
 			self.planet.shouldCleanupSpores = true
 		end
 	end
@@ -119,11 +132,16 @@ function newSpore (planet, colony, position)
 			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS)
 		end
 		
+		--love.graphics.print(self.position, (self.location.x-UNIT_RADIUS*6)*ZOOM, (self.location.y-UNIT_RADIUS*2)*ZOOM)
+		
 		if self.state == 'ready' then
 		elseif self.state == 'spawningLocally' then
 			love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'spawningAbroad' then
+			if self.animationCounter <= 1 then
+				drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
+			end
 			love.graphics.print('spawnA', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'attackingLocally' then
@@ -144,7 +162,7 @@ function newSpore (planet, colony, position)
 	end
 	
 	function s:updateAnimationCounter ()
-		self.animationCounter = self.animationCounter - TURN_TIME/10000
+		self.animationCounter = self.animationCounter - (0.1/TURN_TIME)
 	end
 	
 	function s:launchExplorer ()
@@ -156,6 +174,29 @@ function newSpore (planet, colony, position)
 		self.location = self.planet.location
 		self.state = 'exploring'
 		self.animationCounter = 1
+	end
+	
+	function s:spawnLocally ()
+		if self.planet:isRoomAvailable() then
+			self.state = 'spawningLocally'
+			self.animationCounter = 1
+			self.child = newSpore(self.planet, self.colony)
+			self.child.state = 'placeholder'
+			self.child.width = 0
+			self.planet:insertSpore(self.position+1, self.child)
+		end
+	end
+	
+	function s:spawnAbroad ()
+		targetPlanet = self.planet:connectionWithRoom()
+		if targetPlanet then
+			self.state = 'spawningAbroad'
+			self.animationCounter = 1.5
+			self.child = newSpore(targetPlanet, self.colony)
+			self.child.state = 'placeholder'
+			self.child.width = 0
+			targetPlanet:insertSpore(1, self.child)
+		end
 	end
 	
 	function s:attackLocally ()
@@ -172,32 +213,9 @@ function newSpore (planet, colony, position)
 		self.target = self.planet:findEnemyAbroad(self.colony)
 		if self.target then
 			self.state = 'attackingAbroad'
-			self.animationCounter = 2
-			self.target.state = 'defendingAbroad'
-			self.target.animationCounter = 2
-		end
-	end
-	
-	function s:spawnLocally ()
-		if self.planet:isRoomAvailable() then
-			self.state = 'spawningLocally'
 			self.animationCounter = 1
-			self.child = newSpore(self.planet, self.colony, 0)
-			self.child.state = 'placeholder'
-			self.child.width = 0
-			self.planet:insertSpore(self.position+1, self.child)
-		end
-	end
-	
-	function s:spawnAbroad ()
-		targetPlanet = self.planet:connectionWithRoom()
-		if targetPlanet then
-			self.state = 'spawningAbroad'
-			self.animationCounter = 2
-			self.child = newSpore(targetPlanet, self.colony)
-			self.child.state = 'placeholder'
-			self.child.width = 0
-			targetPlanet:insertSpore(self.position+1, self.child)
+			self.target.state = 'defendingAbroad'
+			self.target.animationCounter = 1
 		end
 	end
 	
