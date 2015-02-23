@@ -1,23 +1,22 @@
-planets = {}
-planetConnections = {}
-
-OCCUPATION_RATE = 0.5
-
 function initPlanets (numPlanets)
 	planets = {}
 	planetConnections = {}
-	startingMemes = math.ceil(numPlanets * OCCUPATION_RATE)
+	startingColonies = math.ceil(numPlanets / 2)
 	for i=1, numPlanets do
-		local randomSun = suns[randomIntegerBetween(1, tableSize(suns))]
+		local sun = suns[randomIntegerBetween(1, tableSize(suns))]
+		local planet = newPlanet(sun)
 		if i == 1 then
-			planets[i] = newPlanet(i, randomSun, 6, true, human.meme)
-			human.selectedPlanet = planets[i]
-			human.homeWorld = planets[i]
-		elseif i <= startingMemes then
-			planets[i] = newPlanet(i, randomSun, randomIntegerBetween(3, 12), true, newMeme())
-		else
-			planets[i] = newPlanet(i, randomSun, randomIntegerBetween(3, 12), false, newMeme())
+			-- create player homeworld
+			planet.isHomeWorld = true
+			planet.startingColony = human.colony
+			planet.maxSpores = 6
+			human.selectedPlanet = planet
+		elseif i <= startingColonies then
+			-- create ai homeworlds
+			planet.isHomeWorld = true
 		end
+		planet:initSpores()
+		table.insert(planets, planet)
 	end
 end
 
@@ -37,53 +36,72 @@ function drawPlanets ()
 	end
 end
 
-function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
+function newPlanet (sun)
 	local p = {}
 	
-	p.id = id
+	p.startingColony = newColony()
+	p.maxSpores = randomIntegerBetween(3, 12)
+	p.spores = {}
+	p.sporesOffPlanet = {}
+	p.shouldCleanupSpores = false
+	p.sporeWidthAngle = 0
+	
+	p.connections = {}
+	p.shouldUpdateConnections = false
+	
 	p.sun = sun
-	p.unitSpaces = unitSpaces
 	
-	p.isHomeWorld = isHomeWorld
-	p.homeWorldMeme = meme
-	
-	p.oRadius = p.sun:newOrbit()
-	p.oAngle = randomRealBetween(0, TAU)
-	p.oVelocity = randomRealBetween(PI/100, PI/20)
-	
-	p.location = newVector(math.cos(p.oAngle) * p.oRadius,
-												 math.sin(p.oAngle) * p.oRadius)
+	p.radius = p.maxSpores * UNIT_RADIUS / PI
+	p.rotationAngle = randomRealBetween(0, TAU)
+	p.rotationVelocity = randomRealBetween(-0.5, 0.5)
+	p.orbitRadius = p.sun:newOrbit()
+	p.orbitAngle = randomRealBetween(0, TAU)
+	p.orbitVelocity = randomRealBetween(PI/100, PI/20)
+	p.location = newVector(math.cos(p.orbitAngle) * p.orbitRadius, math.sin(p.orbitAngle) * p.orbitRadius)
 	p.location = vAdd(p.location, p.sun.location)
-	p.radius = (p.unitSpaces * UNIT_RADIUS) / PI
 	
-	p.rAngle = randomRealBetween(0, TAU)
-	p.rVelocity = randomRealBetween(-0.5, 0.5)
+	p.isHomeWorld = false
 	
-	p.units = {}
-	p.flyers = {}
-	initUnits(p, meme)
+	function p:initSpores ()
+		if self.isHomeWorld then
+			for i=1, self.maxSpores do
+				table.insert(self.spores, newSpore(self, self.startingColony, i))
+			end
+			p.radius = p.maxSpores * UNIT_RADIUS / PI
+		end
+	end
 	
 	function p:update ()
-		self.rAngle = (self.rAngle + (self.rVelocity / TURN_TIME)) % TAU
-		self.oAngle = self.oAngle + (self.oVelocity / TURN_TIME)
-		
-		self.location = newVector(math.cos(self.oAngle) * self.oRadius,
-															math.sin(self.oAngle) * self.oRadius)
+		self.rotationAngle = (self.rotationAngle + (self.rotationVelocity / TURN_TIME)) % TAU
+		self.orbitAngle = self.orbitAngle + (self.orbitVelocity / TURN_TIME)
+		self.location = newVector(math.cos(self.orbitAngle) * self.orbitRadius,
+															math.sin(self.orbitAngle) * self.orbitRadius)
 		self.location = vAdd(self.location, self.sun.location)
 		
-		updateUnits(self)
-		updateFlyers(self)
+		local sporeWidthSum = 0
+		for _, spore in pairs(self.spores) do
+			spore:update()
+			sporeWidthSum = sporeWidthSum + spore.width
+		end
+		self.sporeWidthAngle = TAU / sporeWidthSum
+
+		for _, spore in pairs(self.sporesOffPlanet) do
+			spore:update()
+		end
+		
+		if self.shouldCleanupSpores then self:cleanupSpores() end
+		if self.shouldUpdateConnections then self:updateConnections() end
 	end
 	
 	function p:draw ()
 		-- draw orbit
 		love.graphics.setColor(255, 255, 255, 10)
 		love.graphics.setLineWidth(1)
-		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.oRadius*ZOOM, SEGMENTS*2)
+		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.orbitRadius*ZOOM, SEGMENTS*2)
 		
 		-- draw homeworld indicator
 		if self.isHomeWorld then
-			self.homeWorldMeme:setToMyColor(150)
+			self.startingColony:setToMyColor(150)
 			love.graphics.setLineWidth(1)
 			love.graphics.circle('line', self.location.x*ZOOM, self.location.y*ZOOM, (self.radius+UNIT_RADIUS*4)*ZOOM, SEGMENTS)
 		end
@@ -96,10 +114,158 @@ function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
 		end
 		drawFilledCircle(self.location.x, self.location.y, self.radius)
 		
-		-- draw memes
-		drawUnits(self)
-		drawFlyers(self)
+		-- draw spores
+		for _, spore in pairs(self.spores) do
+			spore:draw()
+		end
+		for _, spore in pairs(self.sporesOffPlanet) do
+			spore:draw()
+		end
 	end
+	
+	function p:getSporeLocation (mySpore)
+		local sporeAngle = self.rotationAngle + mySpore.rotationAngle
+		for _, spore in pairs(self.spores) do
+			if spore.position < mySpore.position then
+				sporeAngle = sporeAngle + (self.sporeWidthAngle * spore.width)
+			end
+		end
+		local d = self.radius + UNIT_RADIUS
+		local v = newVector(self.location.x+math.cos(sporeAngle)*d, self.location.y+math.sin(sporeAngle)*d)
+		return v
+	end
+	
+	function p:updateConnections ()
+		self.connections = {}
+		for _, c in pairs(planetConnections) do
+			if c.a == self then
+				table.insert(self.connections, c.b)
+			elseif c.b == self then
+				table.insert(self.connections, c.a)
+			end
+		end
+		self.shouldUpdateConnections = false
+	end
+	
+	function p:isRoomAvailable ()
+		return tableSize(self.spores) < self.maxSpores
+	end
+	
+	function p:connectionWithRoom ()
+		local connectionsWithRoom = {}
+		for _, planet in pairs(self.connections) do
+			if planet:isRoomAvailable() then
+				table.insert(connectionsWithRoom, planet)
+			end
+		end
+		return randomElement(connectionsWithRoom)
+	end
+	
+	function p:listEnemies (friendlyColony)
+		local enemies = {}
+		for _, spore in pairs(self.spores) do
+			if spore.state == 'ready' and spore.colony ~= friendlyColony then
+				table.insert(enemies, spore)
+			end
+		end
+		return enemies
+	end
+	
+	function p:findEnemyLocally (friendlyColony)
+		local enemies = self:listEnemies(friendlyColony)
+		if enemies == {} then
+			return nil
+		else
+			return randomElement(enemies)
+		end
+	end
+	
+	function p:findEnemyAbroad (friendlyColony)
+		local enemies = {}
+		for _, planet in pairs(self.connections) do
+			appendToTable(enemies, planet:listEnemies())
+		end
+		if enemies == {} then
+			return nil
+		else
+			return randomElement(enemies)
+		end
+	end
+	
+	function p:countFriends (friendlyColony)
+		local friendCount = 0
+		for _, spore in pairs(self.spores) do
+			if spore.state == 'ready' and spore.colony == friendlyColony then
+				friendCount = friendCount + 1
+			end
+		end
+		return friendCount
+	end
+	
+	function p:findFriend (friendlyColony)
+		local friends = {}
+		for _, spore in pairs(self.spores) do
+			if spore.state == 'ready' and spore.colony == friendlyColony then
+				table.insert(friends, spore)
+			end
+		end
+		return randomElement(friends)
+	end
+	
+	function p:insertSpore (toPosition, newSpore)
+		for _, spore in pairs(self.spores) do
+			if spore.position >= toPosition then
+				spore.position = spore.position + 1
+			end
+		end
+		table.insert(p.spores, toPosition, newSpore)
+		newSpore.position = toPosition
+	end
+	
+	function p:removeSpore (sporeToRemove)
+		for _, spore in pairs(self.spores) do
+			if spore.position > sporeToRemove.position then
+				spore.position = spore.position - 1
+			end
+		end
+	end
+	
+	function p:cleanupSpores ()
+		local cleanSporeList = {}
+		for _, spore in pairs(self.spores) do
+			if spore.state == 'exploring' and spore.width == 0 then
+				self:removeSpore(spore)
+				table.insert(self.sporesOffPlanet, spore)
+			elseif spore.state == 'dead' or spore.planet ~= self then
+				self:removeSpore(spore)
+			else
+				table.insert(cleanSporeList, spore)
+			end
+		end
+		self.spores = cleanSporeList
+		
+		local cleanSporeOffPlanetList = {}
+		for _, spore in pairs(self.sporesOffPlanet) do
+			if spore.state == 'dead' or spore.planet ~= self then
+				self:removeSpore(spore)
+			else
+				table.insert(cleanSporeOffPlanetList, spore)
+			end
+		end
+		self.sporesOffPlanet = cleanSporeOffPlanetList
+		
+		self.shouldCleanupSpores = false
+	end
+	
+	return p
+end
+
+
+--[[
+
+function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
+
+	initUnits(p, meme)
 	
 	function p:checkHomeWorld ()
 		-- check to see if homeworld has been emptied of its original meme
@@ -125,50 +291,6 @@ function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
 		end
 	end
 	
-	function p:getConnections ()
-		local connectedPlanets = {}
-		for _, c in pairs(planetConnections) do
-			if c.a.id == self.id then
-				table.insert(connectedPlanets, c.b)
-			elseif c.b.id == self.id then
-				table.insert(connectedPlanets, c.a)
-			end
-		end
-		return connectedPlanets
-	end
-	
-	function p:removeConnections ()
-		for _, c in pairs(planetConnections) do
-			if c.a.id ~= self.id and c.b.id ~= self.id then
-				c = nil
-			end
-		end
-	end
-	
-	function p:getEmptyConnections (meme)
-		local connectedPlanets = {}
-		for _, c in pairs(planetConnections) do
-			if c.a.id == self.id and tableSize(c.b:getEmptySpaces()) > 0 then --and (not c.b.isHomeWorld or c.b.homeWorldMeme == meme) then
-				table.insert(connectedPlanets, c.b)
-			elseif c.b.id == self.id and tableSize(c.a:getEmptySpaces()) > 0 then -- and (not c.a.isHomeWorld or c.a.homeWorldMeme == meme) then
-				table.insert(connectedPlanets, c.a)
-			end
-		end
-		return connectedPlanets
-	end
-	
-	function p:getEnemyConnections (meme)
-		local connectedPlanets = {}
-		for _, c in pairs(planetConnections) do
-			if c.a.id == self.id and tableSize(c.b:getEnemies(meme)) > 0 then
-				table.insert(connectedPlanets, c.b)
-			elseif c.b.id == self.id and tableSize(c.a:getEnemies(meme)) > 0 then
-				table.insert(connectedPlanets, c.a)
-			end
-		end
-		return connectedPlanets
-	end
-	
 	function p:getFriends (meme)
 		local friends = {}
 		for i=1, self.unitSpaces do
@@ -179,61 +301,11 @@ function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)
 		return friends	
 	end
 	
-	function p:getEnemies (meme)
-		local enemies = {}
-		for i=1, self.unitSpaces do
-			if self.units[i] and not self.units[i]:isBusy() and self.units[i].meme ~= meme then
-				table.insert(enemies, self.units[i])
-			end
-		end
-		return enemies		
-	end
-	
-	function p:getEmptySpaces ()
-		local emptySpaces = {}
-		for i=1, self.unitSpaces do
-			if self.units[i] == nil then
-				table.insert(emptySpaces, i)
-			end
-		end
-		return emptySpaces
-	end
-	
 	function p:addFlyer (newFlyer)
 		table.insert(self.flyers, newFlyer)
 	end
-	
-	return p
 end
 
 --
 
-function newPlanetConnection (planetA, planetB)
-	local c = {}
-	
-	c.a = planetA
-	c.b = planetB
-	
-	function c:draw ()
-		if self.a.id == human.selectedPlanet.id or self.b.id == human.selectedPlanet.id then
-			love.graphics.setColor(200, 200, 200)
-			love.graphics.setLineWidth(1.5)
-		else
-			love.graphics.setColor(100, 100, 100)
-		end
-		love.graphics.setLineWidth(1)
-		love.graphics.line(self.a.location.x*ZOOM, self.a.location.y*ZOOM, self.b.location.x*ZOOM, self.b.location.y*ZOOM)
-	end
-	
-	return c
-end
-
-function areConnected (planetA, planetB)
-	for _, c in pairs(planetConnections) do
-		if (c.a.id == planetA.id and c.b.id == planetB.id)
-			or (c.a.id == planetB.id and c.b.id == planetA.id) then
-				return true
-		end
-	end
-	return false
-end
+]]--

@@ -4,6 +4,7 @@ function pauseMode:load ()
 	self.buttons = {
 		newButton('resume', 100, 200, function () screenMode = gameMode end),
 		newSoundToggle(100, 250),
+		newFullscreenToggle(100, 300),
 		newButton('quit to menu', 100, 500, function () switchToMode(startMode) end)
 	}
 end

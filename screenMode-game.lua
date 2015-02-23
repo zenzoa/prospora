@@ -1,9 +1,9 @@
 gameMode = newScreenMode()
 
 gameMode.barWidth = love.graphics.getWidth() * 0.5
-gameMode.handleAgg = {}
-gameMode.handleCon = {}
-gameMode.handleFec = {}
+gameMode.handleAttack = {}
+gameMode.handleTravel = {}
+gameMode.handleSpawn = {}
 gameMode.handleZoom = {}
 gameMode.handleTime = {}
 gameMode.handlePause = {}
@@ -13,8 +13,8 @@ gameMode.dragging = ''
 function gameMode:load ()
 	WORLD_SIZE = { width = 1200 + 120*UNIVERSE_SIZE, height = 1200 + 120*UNIVERSE_SIZE }
 	OFFSET = { x = WORLD_SIZE.width/2, y = WORLD_SIZE.height/2 }
-	TURN_TIME = 30.0
-	ZOOM = 0.5
+	TURN_TIME = 60.0
+	ZOOM = 1
 	
 	human = newPlayer()
 	
@@ -53,9 +53,9 @@ function gameMode:draw ()
 	-- draw bars
 	love.graphics.setColor(255, 255, 255, 50)
 	love.graphics.setLineWidth(30)
-	love.graphics.line(0, self.handleAgg.y, self.handleAgg.x - 10, self.handleAgg.y)
-	love.graphics.line(0, self.handleFec.y, self.handleFec.x - 10, self.handleFec.y)
-	love.graphics.line(0, self.handleCon.y, self.handleCon.x - 10, self.handleCon.y)
+	love.graphics.line(0, self.handleAttack.y, self.handleAttack.x - 10, self.handleAttack.y)
+	love.graphics.line(0, self.handleSpawn.y, self.handleSpawn.x - 10, self.handleSpawn.y)
+	love.graphics.line(0, self.handleTravel.y, self.handleTravel.x - 10, self.handleTravel.y)
 	
 	love.graphics.setLineWidth(36)
 	love.graphics.line(self.handleZoom.x+18, self.handleZoom.y, love.graphics.getWidth(), self.handleZoom.y)
@@ -63,18 +63,18 @@ function gameMode:draw ()
 	
 	-- draw bar handles
 	love.graphics.setLineWidth(16)
-	if self.dragging == 'agg' then love.graphics.setColor(0, 170, 250) else love.graphics.setColor(0, 170, 250, 150) end
-	love.graphics.line(self.handleAgg.x, self.handleAgg.y-15, self.handleAgg.x, self.handleAgg.y+15)
-	if self.dragging == 'fec' then love.graphics.setColor(0, 170, 250) else love.graphics.setColor(0, 170, 250, 150) end
-	love.graphics.line(self.handleFec.x, self.handleFec.y-15, self.handleFec.x, self.handleFec.y+15)
-	if self.dragging == 'con' then love.graphics.setColor(0, 170, 250) else love.graphics.setColor(0, 170, 250, 150) end
-	love.graphics.line(self.handleCon.x, self.handleCon.y-15, self.handleCon.x, self.handleCon.y+15)
+	if self.dragging == 'attack' then love.graphics.setColor(0, 170, 250) else love.graphics.setColor(0, 170, 250, 150) end
+	love.graphics.line(self.handleAttack.x, self.handleAttack.y-15, self.handleAttack.x, self.handleAttack.y+15)
+	if self.dragging == 'spawn' then love.graphics.setColor(0, 170, 250) else love.graphics.setColor(0, 170, 250, 150) end
+	love.graphics.line(self.handleSpawn.x, self.handleSpawn.y-15, self.handleSpawn.x, self.handleSpawn.y+15)
+	if self.dragging == 'travel' then love.graphics.setColor(0, 170, 250) else love.graphics.setColor(0, 170, 250, 150) end
+	love.graphics.line(self.handleTravel.x, self.handleTravel.y-15, self.handleTravel.x, self.handleTravel.y+15)
 	
 	-- draw labels
 	love.graphics.setColor(255, 255, 255)
-	love.graphics.print('ATTACK', 5, self.handleAgg.y-10)
-	love.graphics.print('SPAWN', 5, self.handleFec.y-10)
-	love.graphics.print('TRAVEL', 5, self.handleCon.y-10)
+	love.graphics.print(strings.attack, 5, self.handleAttack.y-10)
+	love.graphics.print(strings.spawn, 5, self.handleSpawn.y-10)
+	love.graphics.print(strings.travel, 5, self.handleTravel.y-10)
 	
 	-- draw zoom handle
 	if self.dragging == 'zoom' then
@@ -127,7 +127,7 @@ function gameMode:mousepressed(x, y)
 		if collidePointCircle(adjMouse, planet.location, planet.radius + UNIT_RADIUS*2) then
 					human.selectedPlanet = planet
 					selectingPlanet = true
-					if tableSize(planet:getFriends(human.meme)) > 1 then
+					if planet:countFriends(human.colony) > 1 then
 						self.dragging = 'launch'
 					end
 					selectSound:rewind()
@@ -136,12 +136,12 @@ function gameMode:mousepressed(x, y)
 	end
 	
 	if not selectingPlanet then
-		if collidePointCircle(mousePos, self.handleAgg, 15) then
-			self.dragging = 'agg'
-		elseif collidePointCircle(mousePos, self.handleCon, 15) then
-			self.dragging = 'con'
-		elseif collidePointCircle(mousePos, self.handleFec, 15) then
-			self.dragging = 'fec'
+		if collidePointCircle(mousePos, self.handleAttack, 15) then
+			self.dragging = 'attack'
+		elseif collidePointCircle(mousePos, self.handleTravel, 15) then
+			self.dragging = 'travel'
+		elseif collidePointCircle(mousePos, self.handleSpawn, 15) then
+			self.dragging = 'spawn'
 		elseif collidePointCircle(mousePos, self.handleZoom, 20) then
 			self.dragging = 'zoom'
 		elseif collidePointCircle(mousePos, self.handleTime, 20) then
@@ -163,10 +163,9 @@ function gameMode:mousereleased (x, y)
 	if self.dragging == 'launch' then
 		local d = vMul(vSub(adjMouse, human.selectedPlanet.location), ZOOM)
 		if vMag(d) > human.selectedPlanet.radius + UNIT_RADIUS*4 then
-			local friends = human.selectedPlanet:getFriends(human.meme)
-			if tableSize(friends) > 1 then
-				local u = randomElement(friends)
-				u:launchFlyer()
+			if human.selectedPlanet:countFriends(human.colony) > 1 then
+				local spore = human.selectedPlanet:findFriend(human.colony)
+				spore:launchExplorer()
 				launchSound:rewind()
 				if soundOn then launchSound:play() end
 			end
@@ -185,15 +184,15 @@ function gameMode:checkDragging ()
 		local d = vMul(vSub(adjMouse, self.dragStartPoint), ZOOM)
 		OFFSET = vAdd(OFFSET, d)
 		adjustOffset()
-	elseif self.dragging == 'agg' then
-		human.meme.agg = newGeneLevel
-		human.meme:adjustGenes()
-	elseif self.dragging == 'con' then
-		human.meme.con = newGeneLevel
-		human.meme:adjustGenes()
-	elseif self.dragging == 'fec' then
-		human.meme.fec = newGeneLevel
-		human.meme:adjustGenes()
+	elseif self.dragging == 'attack' then
+		human.colony.attack = newGeneLevel
+		human.colony:adjustGenes()
+	elseif self.dragging == 'travel' then
+		human.colony.travel = newGeneLevel
+		human.colony:adjustGenes()
+	elseif self.dragging == 'spawn' then
+		human.colony.spawn = newGeneLevel
+		human.colony:adjustGenes()
 	elseif self.dragging == 'zoom' then
 		ZOOM = 1.33 - math.min(1.0, math.max(0.33, (love.graphics.getWidth()-love.mouse.getX()+37) / (self.barWidth/2)))
 		centerOnSelection()
@@ -204,9 +203,9 @@ function gameMode:checkDragging ()
 end
 
 function gameMode:updateInterface ()
-	self.handleAgg = newVector(self.barWidth * human.meme.agg + 120, 20)
-	self.handleFec = newVector(self.barWidth * human.meme.fec + 120, 60)
-	self.handleCon = newVector(self.barWidth * human.meme.con + 120, 100)
+	self.handleAttack = newVector(self.barWidth * human.colony.attack + 120, 20)
+	self.handleSpawn = newVector(self.barWidth * human.colony.spawn + 120, 60)
+	self.handleTravel = newVector(self.barWidth * human.colony.travel + 120, 100)
 	self.handleZoom = newVector(love.graphics.getWidth() - ((1.0 - ZOOM) * (self.barWidth/2)) - 30, love.graphics.getHeight() - 30)
 	self.handleTime = newVector((self.barWidth/2)*(1-(TURN_TIME/60)) + 30, love.graphics.getHeight() - 30)
 	self.handlePause = newVector(love.graphics.getWidth() / 2, love.graphics.getHeight() - 30)

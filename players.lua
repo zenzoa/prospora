@@ -1,10 +1,8 @@
--- for future multiplayer, other players are not distinguished for being human; they show up as a random color on your screen like all the NPCs. Bwahaha!
-
 function newPlayer ()
 	local p = {}
 	
-	p.meme = newMeme()
-	p.meme.color = { r=50, g=186, b=250 }
+	p.colony = newColony()
+	p.colony.color = { r=50, g=186, b=250 }
 	p.selectedPlanet = nil
 	p.homeWorld = nil
 	p.homeUnderAttack = false
@@ -23,9 +21,10 @@ function drawHalo ()
 	local p = human.selectedPlanet
 	local maxHalo = UNIT_RADIUS * 40
 	local minHalo = UNIT_RADIUS * 5
-	love.graphics.setColor(0, 170, 250)
+	love.graphics.setColor(255, 255, 255)
 	
 	if gameMode.dragging == 'launch' then
+		love.graphics.setColor(0, 170, 250)
 		local adjMouse = adjustMousePos(love.mouse.getX(), love.mouse.getY())
 		local d = vMul(vSub(adjMouse, p.location), ZOOM)
 		local dMag = vMag(d)

@@ -74,18 +74,18 @@ function newSoundToggle (x, y)
 	b = newButton ('', x, y, nil)
 	
 	if soundOn then
-		b.text = 'sound: on'
+		b.text = strings.soundsOn
 	else
-		b.text = 'sound: off'
+		b.text = strings.soundsOff
 	end
 	
 	function b:activate ()
 		soundOn = not soundOn
 		if soundOn then
-			self.text = 'sound: on'
+			self.text = strings.soundsOn
 			love.audio.resume()
 		else
-			self.text = 'sound: off'
+			self.text = strings.soundsOff
 			love.audio.pause()
 		end
 	end
@@ -97,23 +97,47 @@ function newGameSizeToggle (x, y)
 	b = newButton ('', x, y, nil)
 	
 	if UNIVERSE_SIZE == 20 then
-		b.text = 'universe: large'
+		b.text = strings.universeLarge
 	elseif UNIVERSE_SIZE == 5 then
-		b.text = 'universe: small'
+		b.text = strings.universeSmall
 	else
-		b.text = 'universe: medium'
+		b.text = strings.universeMedium
 	end
 	
 	function b:activate ()
 		if UNIVERSE_SIZE == 10 then
 			UNIVERSE_SIZE = 20
-			self.text = 'universe: large'
+			self.text = strings.universeLarge
 		elseif UNIVERSE_SIZE == 20 then
 			UNIVERSE_SIZE = 5
-			self.text = 'universe: small'
+			self.text = strings.universeSmall
 		else
 			UNIVERSE_SIZE = 10
-			self.text = 'universe: medium'
+			self.text = strings.universeMedium
+		end
+	end
+	
+	return b
+end
+
+function newFullscreenToggle (x, y)
+	b = newButton ('', x, y, nil)
+	
+	if love.window.getFullscreen() then
+		b.text = strings.fullscreenOn
+	else
+		b.text = strings.fullscreenOff
+	end
+	
+	function b:activate ()
+		local isFullscreen = not love.window.getFullscreen()
+		love.window.setFullscreen(isFullscreen)
+		if isFullscreen then
+			self.text = strings.fullscreenOn
+			love.window.setFullscreen(true)
+		else
+			self.text = strings.fullscreenOff
+			love.window.setFullscreen(false)
 		end
 	end
 	

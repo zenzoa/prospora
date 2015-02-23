@@ -1,10 +1,12 @@
 require("maths")
 require("vectors")
+require("strings")
 
 require("stars")
 require("suns")
-require("flyers")
-require("memes")
+require("colonies")
+require("spores")
+require("connections")
 require("planets")
 require("players")
 
@@ -19,19 +21,11 @@ require("screenMode-tutorial")
 require("screenMode-credits")
 
 FPS = 60
-TURN_TIME = 30.0
-ZOOM = 0.5
 UNIT_RADIUS = 5
 SEGMENTS = 60
-
 UNIVERSE_SIZE = 10
-WORLD_SIZE = {width = 0, height = 0}
-OFFSET = {x = 0, y = 0}
-
 human = newPlayer()
-
 screenMode = startMode
-
 soundOn = true
 
 function love.load()
@@ -40,7 +34,7 @@ function love.load()
 	
 	-- Setup window
 	love.window.setTitle("Prospora")
-	love.window.setMode(600, 600)
+	love.window.setMode(800, 600, {fullscreen=false, fullscreentype='desktop'})
 	love.graphics.setBackgroundColor(51, 51, 51)
 	love.graphics.setLineStyle('smooth')
 	love.graphics.setPointStyle('rough')
@@ -100,7 +94,7 @@ end
 function checkForEndGame ()
 	local noEnemyHomeworlds = true
 	for _, planet in pairs(planets) do
-		if planet.isHomeWorld and planet.homeWorldMeme ~= human.meme then
+		if planet.isHomeWorld and planet.homeWorldMeme ~= human.colony then
 			noEnemyHomeworlds = false
 		end
 	end
