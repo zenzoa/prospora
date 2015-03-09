@@ -27,6 +27,7 @@ UNIVERSE_SIZE = 10
 human = newPlayer()
 screenMode = startMode
 soundOn = true
+advancedControls = true --default to false
 
 function love.load()
 	
@@ -49,13 +50,15 @@ function love.load()
 	gameMusic:setLooping(true)
 	winMusic = love.audio.newSource('assets/alg0rh1tm-unit731.mp3', 'stream')
 	winMusic:setLooping(true)
-	loseMusic = love.audio.newSource('assets/alg0rh1tm-unit731.mp3', 'stream')
-	loseMusic:setLooping(true)
+	loseSound = love.audio.newSource('assets/ani-music-wicked-bass-drop.wav', 'static')
 	launchSound = love.audio.newSource('assets/fins-laser.wav', 'static')
 	selectSound = love.audio.newSource('assets/nickgoa-plink.wav', 'static')
 	selectSound:setVolume(0.5)
 	buttonSound = love.audio.newSource('assets/junggle-btn402.mp3', 'static')
 	buttonSound:setVolume(0.1)
+	hitPlanetSound = love.audio.newSource('assets/reitanna-drop-metal-thing.wav', 'static')
+	hitPlanetSound:setVolume(0.5)
+	attackedSound = love.audio.newSource('assets/daphne-in-wonderland-bass-metal-thud.wav', 'static')
 	
 	-- setup tutorial images
 	tutorialImage1 = love.graphics.newImage('assets/tutorial-1.png')

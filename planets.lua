@@ -106,14 +106,6 @@ function newPlanet (sun)
 			love.graphics.circle('line', self.location.x*ZOOM, self.location.y*ZOOM, (self.radius+UNIT_RADIUS*4)*ZOOM, SEGMENTS)
 		end
 		
-		-- draw planet
-		if self.id == human.selectedPlanet.id then
-			love.graphics.setColor(200, 200, 200)
-		else
-			love.graphics.setColor(100, 100, 100)
-		end
-		drawFilledCircle(self.location.x, self.location.y, self.radius)
-		
 		-- draw spores
 		for _, spore in pairs(self.spores) do
 			spore:draw()
@@ -122,7 +114,15 @@ function newPlanet (sun)
 			spore:draw()
 		end
 		
-		love.graphics.print(tableSize(self.spores), (self.location.x+self.radius)*ZOOM, (self.location.y+self.radius)*ZOOM)
+		-- draw planet
+		if self.id == human.selectedPlanet.id then
+			love.graphics.setColor(200, 200, 200)
+		else
+			love.graphics.setColor(100, 100, 100)
+		end
+		drawFilledCircle(self.location.x, self.location.y, self.radius)
+		
+		--love.graphics.print(tableSize(self.spores), (self.location.x+self.radius)*ZOOM, (self.location.y+self.radius)*ZOOM)
 	end
 	
 	function p:getSporeLocation (mySpore)
@@ -224,9 +224,7 @@ function newPlanet (sun)
 		for _,spore in pairs(self.spores) do
 			if spore.state == 'exploring' and spore.width == 0 then
 				table.insert(self.sporesOffPlanet, spore)
-			elseif spore.state == 'dead' or spore.planet ~= self then
-				--
-			else
+			elseif spore.state ~= 'dead' and spore.planet == self then
 				table.insert(cleanSporeList, spore)
 			end
 		end
@@ -237,9 +235,7 @@ function newPlanet (sun)
 		
 		local cleanSporeOffPlanetList = {}
 		for _,spore in pairs(self.sporesOffPlanet) do
-			if spore.state == 'dead' or spore.planet ~= self then
-				--
-			else
+			if spore.state ~= 'dead' and spore.planet == self then
 				table.insert(cleanSporeOffPlanetList, spore)
 			end
 		end

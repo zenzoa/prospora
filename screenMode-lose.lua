@@ -5,7 +5,8 @@ function loseMode:load ()
 		newButton('main menu', 100, 500, function () switchToMode(startMode) end)
 	}
 	resetMusic()
-	if soundOn then loseMusic:play() end
+	loseSound:rewind()
+	if soundOn then loseSound:play() end
 end
 
 function loseMode:draw ()

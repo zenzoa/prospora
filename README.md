@@ -15,5 +15,7 @@ Game designed and coded by [Sarah Gould](http://www.zenzoa.com)
 **Sounds from [freesound.org](http://www.freesound.org)**
 
 - btn402 by junggle
-- laser by fins
-- plink by nickgoa
+- laser by fins (public domain)
+- plink by nickgoa (public domain)
+- staple drop by djtiii (public domain)
+- bass metal thud by daphne in wonderland (public domain)

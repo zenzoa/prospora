@@ -134,10 +134,29 @@ function newFullscreenToggle (x, y)
 		love.window.setFullscreen(isFullscreen)
 		if isFullscreen then
 			self.text = strings.fullscreenOn
-			love.window.setFullscreen(true)
 		else
 			self.text = strings.fullscreenOff
-			love.window.setFullscreen(false)
+		end
+	end
+	
+	return b
+end
+
+function newAdvancedControlsToggle (x, y)
+	b = newButton ('', x, y, nil)
+	
+	if advancedControls then
+		b.text = strings.advancedControlsOn
+	else
+		b.text = strings.advancedControlsOff
+	end
+	
+	function b:activate ()
+		advancedControls = not advancedControls
+		if advancedControls then
+			self.text = strings.advancedControlsOn
+		else
+			self.text = strings.advancedControlsOff
 		end
 	end
 	

@@ -40,8 +40,8 @@ function newSpore (planet, colony, position)
 			
 		elseif self.state == 'spawningLocally' then
 			s:updateAnimationCounter()
-			-- splitting animation, increase self.width
-			self.width = 2 - self.animationCounter
+			self.child.width = 1 - self.animationCounter
+			self.child.location = self.planet:getSporeLocation(self.child)
 			if self.animationCounter <= 0 then
 				self.child.state = 'ready'
 				self.child.width = 1
@@ -53,17 +53,13 @@ function newSpore (planet, colony, position)
 			
 		elseif self.state == 'spawningAbroad' then
 			s:updateAnimationCounter()
-			-- splitting animation, increase self.width;
-			-- then show child flying across connection while self.width returns to normal and child.width increases
-			if self.animationCounter > 1 then
-				self.width = 1.5 - self.animationCounter
+			if self.animationCounter > 1.5 then
 			elseif self.animationCounter > 0 then
-				self.width = 1 + self.animationCounter
-				self.child.width = 1 - self.animationCounter
+				self.child.width = (1.5 - self.animationCounter)/1.5
 				local d = vSub(self.child.planet.location, self.planet.location)
 				local totalDistance = vMag(d)
 				d = vNormalize(d)
-				self.child.location = vMul(d, totalDistance * (1 - self.animationCounter))
+				self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
 				self.child.location = vAdd(self.child.location, self.planet.location)
 			else
 				self.child.state = 'ready'
@@ -97,6 +93,10 @@ function newSpore (planet, colony, position)
 			-- dying animation
 			if self.animationCounter <= 0 then
 				self.state = 'dead'
+				if self.colony == human.colony then
+					attackedSound:rewind()
+					if soundOn then attackedSound:play() end
+				end
 			end
 			
 		elseif self.state == 'defendingAbroad' then
@@ -104,6 +104,10 @@ function newSpore (planet, colony, position)
 			-- dying animation after delay for attacker to arrive
 			if self.animationCounter <= 0 then
 				self.state = 'dead'
+				if self.colony == human.colony then
+					attackedSound:rewind()
+					if soundOn then attackedSound:play() end
+				end
 			end
 			
 		elseif self.state == 'exploring' then
@@ -118,6 +122,10 @@ function newSpore (planet, colony, position)
 			if planet and planet ~= self.planet and not areConnected(self.planet, planet) then
 				table.insert(planetConnections, newConnection(self.planet, planet))
 				self.state = 'dead'
+				if self.colony == human.colony then
+					hitPlanetSound:rewind()
+					if soundOn then hitPlanetSound:play() end
+				end
 			end
 		end
 		
@@ -128,18 +136,19 @@ function newSpore (planet, colony, position)
 	
 	function s:draw ()
 		self.colony:setToMyColor()
-		if self.state ~= 'placeholder' then
-			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS)
-		end
+		local radius = UNIT_RADIUS
 		
 		--love.graphics.print(self.position, (self.location.x-UNIT_RADIUS*6)*ZOOM, (self.location.y-UNIT_RADIUS*2)*ZOOM)
 		
 		if self.state == 'ready' then
 		elseif self.state == 'spawningLocally' then
-			love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
+			drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS)
 			
 		elseif self.state == 'spawningAbroad' then
-			if self.animationCounter <= 1 then
+			if self.animationCounter > 1.5 then
+				drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS*(3-self.animationCounter))
+			elseif self.animationCounter > 0 then
 				drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
 			end
 			love.graphics.print('spawnA', self.location.x*ZOOM, self.location.y*ZOOM)
@@ -157,12 +166,16 @@ function newSpore (planet, colony, position)
 			love.graphics.print('die', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'exploring' then
-			love.graphics.print('wheeee!', self.location.x*ZOOM, self.location.y*ZOOM)
+			radius = radius/2
+		end
+		
+		if self.state ~= 'placeholder' then
+			drawFilledCircle(self.location.x, self.location.y, radius)
 		end
 	end
 	
 	function s:updateAnimationCounter ()
-		self.animationCounter = self.animationCounter - (0.1/TURN_TIME)
+		self.animationCounter = self.animationCounter - (1/TURN_TIME)
 	end
 	
 	function s:launchExplorer ()
@@ -191,7 +204,7 @@ function newSpore (planet, colony, position)
 		targetPlanet = self.planet:connectionWithRoom()
 		if targetPlanet then
 			self.state = 'spawningAbroad'
-			self.animationCounter = 1.5
+			self.animationCounter = 2
 			self.child = newSpore(targetPlanet, self.colony)
 			self.child.state = 'placeholder'
 			self.child.width = 0

@@ -57,9 +57,11 @@ function gameMode:draw ()
 	love.graphics.line(0, self.handleSpawn.y, self.handleSpawn.x - 10, self.handleSpawn.y)
 	love.graphics.line(0, self.handleTravel.y, self.handleTravel.x - 10, self.handleTravel.y)
 	
-	love.graphics.setLineWidth(36)
-	love.graphics.line(self.handleZoom.x+18, self.handleZoom.y, love.graphics.getWidth(), self.handleZoom.y)
-	love.graphics.line(0, self.handleTime.y, self.handleTime.x-17, self.handleTime.y)
+	if advancedControls then
+		love.graphics.setLineWidth(36)
+		love.graphics.line(self.handleZoom.x+18, self.handleZoom.y, love.graphics.getWidth(), self.handleZoom.y)
+		love.graphics.line(0, self.handleTime.y, self.handleTime.x-17, self.handleTime.y)
+	end
 	
 	-- draw bar handles
 	love.graphics.setLineWidth(16)
@@ -76,34 +78,36 @@ function gameMode:draw ()
 	love.graphics.print(strings.spawn, 5, self.handleSpawn.y-10)
 	love.graphics.print(strings.travel, 5, self.handleTravel.y-10)
 	
-	-- draw zoom handle
-	if self.dragging == 'zoom' then
-		love.graphics.setColor(0, 170, 250)
-	else
-		love.graphics.setColor(0, 170, 250, 150)
-	end
-	love.graphics.setLineWidth(36)
-	love.graphics.line(self.handleZoom.x-14, self.handleZoom.y, self.handleZoom.x+16, self.handleZoom.y)
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.setLineWidth(3)
-	love.graphics.circle('line', self.handleZoom.x, self.handleZoom.y-3, 8, SEGMENTS)
-	love.graphics.setLineWidth(5)
-	love.graphics.line(self.handleZoom.x+6, self.handleZoom.y+5, self.handleZoom.x+12, self.handleZoom.y+13)
+	if advancedControls then
+		-- draw zoom handle
+		if self.dragging == 'zoom' then
+			love.graphics.setColor(0, 170, 250)
+		else
+			love.graphics.setColor(0, 170, 250, 150)
+		end
+		love.graphics.setLineWidth(36)
+		love.graphics.line(self.handleZoom.x-14, self.handleZoom.y, self.handleZoom.x+16, self.handleZoom.y)
+		love.graphics.setColor(255, 255, 255)
+		love.graphics.setLineWidth(3)
+		love.graphics.circle('line', self.handleZoom.x, self.handleZoom.y-3, 8, SEGMENTS)
+		love.graphics.setLineWidth(5)
+		love.graphics.line(self.handleZoom.x+6, self.handleZoom.y+5, self.handleZoom.x+12, self.handleZoom.y+13)
 	
-	-- draw time handle
-	if self.dragging == 'time' then
-		love.graphics.setColor(0, 170, 250)
-	else
-		love.graphics.setColor(0, 170, 250, 150)
+		-- draw time handle
+		if self.dragging == 'time' then
+			love.graphics.setColor(0, 170, 250)
+		else
+			love.graphics.setColor(0, 170, 250, 150)
+		end
+		love.graphics.setLineWidth(36)
+		love.graphics.line(self.handleTime.x-15, self.handleTime.y, self.handleTime.x+15, self.handleTime.y)
+		love.graphics.setColor(255, 255, 255)
+		love.graphics.setLineWidth(3)
+		love.graphics.circle('line', self.handleTime.x, self.handleTime.y, 11, SEGMENTS)
+		love.graphics.setLineWidth(2)
+		love.graphics.line(self.handleTime.x, self.handleTime.y, self.handleTime.x, self.handleTime.y-12)
+		love.graphics.line(self.handleTime.x, self.handleTime.y, self.handleTime.x+9, self.handleTime.y-3)
 	end
-	love.graphics.setLineWidth(36)
-	love.graphics.line(self.handleTime.x-15, self.handleTime.y, self.handleTime.x+15, self.handleTime.y)
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.setLineWidth(3)
-	love.graphics.circle('line', self.handleTime.x, self.handleTime.y, 11, SEGMENTS)
-	love.graphics.setLineWidth(2)
-	love.graphics.line(self.handleTime.x, self.handleTime.y, self.handleTime.x, self.handleTime.y-12)
-	love.graphics.line(self.handleTime.x, self.handleTime.y, self.handleTime.x+9, self.handleTime.y-3)
 	
 	-- draw pause button
 	if self.dragging == 'pause' then
@@ -111,9 +115,10 @@ function gameMode:draw ()
 	else
 		love.graphics.setColor(0, 170, 250, 150)
 	end
-	drawFilledCircle(self.handlePause.x/ZOOM, self.handlePause.y/ZOOM, 20/ZOOM)
+	--drawFilledCircle(self.handlePause.x/ZOOM, self.handlePause.y/ZOOM, 20/ZOOM)
+	love.graphics.rectangle('fill', self.handlePause.x-20, self.handlePause.y-20, 40, 40)
 	love.graphics.setColor(255, 255, 255)
-	love.graphics.setLineWidth(5)
+	love.graphics.setLineWidth(6)
 	love.graphics.line(self.handlePause.x-6, self.handlePause.y-9, self.handlePause.x-6, self.handlePause.y+9)
 	love.graphics.line(self.handlePause.x+6, self.handlePause.y-9, self.handlePause.x+6, self.handlePause.y+9)
 end
@@ -142,9 +147,9 @@ function gameMode:mousepressed(x, y)
 			self.dragging = 'travel'
 		elseif collidePointCircle(mousePos, self.handleSpawn, 15) then
 			self.dragging = 'spawn'
-		elseif collidePointCircle(mousePos, self.handleZoom, 20) then
+		elseif advancedControls and collidePointCircle(mousePos, self.handleZoom, 20) then
 			self.dragging = 'zoom'
-		elseif collidePointCircle(mousePos, self.handleTime, 20) then
+		elseif advancedControls and collidePointCircle(mousePos, self.handleTime, 20) then
 			self.dragging = 'time'
 		elseif collidePointCircle(mousePos, self.handlePause, 20) then
 			buttonSound:rewind()
@@ -208,5 +213,5 @@ function gameMode:updateInterface ()
 	self.handleTravel = newVector(self.barWidth * human.colony.travel + 120, 100)
 	self.handleZoom = newVector(love.graphics.getWidth() - ((1.0 - ZOOM) * (self.barWidth/2)) - 30, love.graphics.getHeight() - 30)
 	self.handleTime = newVector((self.barWidth/2)*(1-(TURN_TIME/60)) + 30, love.graphics.getHeight() - 30)
-	self.handlePause = newVector(love.graphics.getWidth() / 2, love.graphics.getHeight() - 30)
+	self.handlePause = newVector(love.graphics.getWidth() - 25, 25)
 end

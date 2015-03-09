@@ -22,8 +22,7 @@ function creditsMode:draw ()
 	
 	love.graphics.print('sounds from freesound.org:', 100, 350)
 	love.graphics.print('btn402 by junggle', 100, 380)
-	love.graphics.print('laser by fins', 100, 410)
-	love.graphics.print('plink by nickgoa', 100, 440)
+	love.graphics.print('(all others public domain)', 100, 410)
 	
 	self:drawButtons()
 end

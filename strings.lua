@@ -13,6 +13,9 @@ strings = {
 	soundsOn = 'audio: on',
 	soundsOff = 'audio: off',
 	
+	advancedControlsOn = 'advanced controls: on',
+	advancedControlsOff = 'advanced controls: off',
+	
 	mainMenu = 'main menu',
 	
 	optionsHeader = 'options',

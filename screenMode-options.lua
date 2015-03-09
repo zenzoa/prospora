@@ -3,8 +3,9 @@ optionsMode = newScreenMode()
 function optionsMode:load ()
 	self.buttons = {
 		newSoundToggle(100, 200),
-		newGameSizeToggle(100, 250),
-		newFullscreenToggle(100, 300),
+		newFullscreenToggle(100, 250),
+		newAdvancedControlsToggle(100, 300),
+		newGameSizeToggle(100, 350),
 		newButton(strings.mainMenu, 100, 500, function () switchToMode(startMode) end)
 	}
 end
