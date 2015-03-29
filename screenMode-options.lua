@@ -1,19 +1,11 @@
-optionsMode = newScreenMode()
+optionsMode = newScreenMode(strings.optionsHeader)
 
 function optionsMode:load ()
-	self.buttons = {
-		newSoundToggle(100, 200),
-		newFullscreenToggle(100, 250),
-		newAdvancedControlsToggle(100, 300),
-		newGameSizeToggle(100, 350),
-		newButton(strings.mainMenu, 100, 500, function () switchToMode(startMode) end)
-	}
-end
-
-function optionsMode:draw ()
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.setFont(fontLarge)
-	love.graphics.print(strings.optionsHeader, 100, 100)
-	love.graphics.setFont(font)
-	self:drawButtons()
+	self:resetObjects()
+	self:addObject(newSoundToggle())
+	self:addObject(newFullscreenToggle())
+	self:addObject(newAdvancedControlsToggle())
+	--self:addObject(newGameSizeToggle())
+	self:addObject(newSpacer())
+	self:addObject(newMenuReturn())
 end

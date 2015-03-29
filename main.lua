@@ -121,8 +121,6 @@ function resetMusic ()
 	gameMusic:stop()
 	winMusic:rewind()
 	winMusic:stop()
-	loseMusic:rewind()
-	loseMusic:stop()
 end
 
 --

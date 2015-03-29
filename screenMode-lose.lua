@@ -1,22 +1,12 @@
-loseMode = newScreenMode()
+loseMode = newScreenMode(strings.loseHeader)
 
 function loseMode:load ()
-	self.buttons = {
-		newButton('main menu', 100, 500, function () switchToMode(startMode) end)
-	}
+	self:resetObjects()
+	self:addObject(newLabel(strings.loseMessage))
+	self:addObject(newSpacer())
+	self:addObject(newMenuReturn())
+	
 	resetMusic()
 	loseSound:rewind()
 	if soundOn then loseSound:play() end
-end
-
-function loseMode:draw ()
-	love.graphics.setColor(255, 255, 255)
-	love.graphics.setFont(fontLarge)
-	love.graphics.print('LOSE', 100, 200)
-
-	love.graphics.setColor(200, 200, 200)
-	love.graphics.setFont(font)
-	love.graphics.print('you have been eradicated', 100, 250)
-	
-	self:drawButtons()
 end
