@@ -21,7 +21,7 @@ function newSpore (planet, colony, position)
 			local isActing = randomRealBetween(0, TURN_TIME*60) < 1
 			if isActing then
 				local isTraveling = randomRealBetween(0, 1) < self.colony.travel
-				local isConnecting = isTraveling and self.colony ~= human.colony and randomRealBetween(0, 2) < self.colony.travel
+				local isConnecting = isTraveling and self.colony ~= human.colony and self.planet:countFriends(self.colony) > 1 and randomRealBetween(0, 2) < self.colony.travel
 				local isAttacking = randomRealBetween(0, self.colony.attack + self.colony.spawn) < self.colony.attack
 				if isConnecting then
 					self:launchExplorer()
@@ -32,7 +32,7 @@ function newSpore (planet, colony, position)
 						self:spawnAbroad()
 					end
 				elseif isAttacking then
-					--self:attackLocally()
+					self:attackLocally()
 				else
 					self:spawnLocally()
 				end
@@ -45,10 +45,8 @@ function newSpore (planet, colony, position)
 			if self.animationCounter <= 0 then
 				self.child.state = 'ready'
 				self.child.width = 1
-				self.child.rotationAngle = 0
 				self.state = 'ready'
 				self.width = 1
-				self.rotationAngle = 0
 			end
 			
 		elseif self.state == 'spawningAbroad' then
@@ -70,11 +68,13 @@ function newSpore (planet, colony, position)
 		elseif self.state == 'attackingLocally' then
 			s:updateAnimationCounter()
 			-- move towards target, decrease self.width
-			self.width = self.animationCounter
+			--self.width = self.animationCounter
+			self.rotationAngle = TAU*self.animationCounter
 			if self.animationCounter <= 0 then
-				self.position = self.target.position
+				--self.position = self.target.position
 				self.width = 1
 				self.state = 'ready'
+				self.rotationAngle = 0
 			end
 			
 		elseif self.state == 'attackingAbroad' then
@@ -142,7 +142,7 @@ function newSpore (planet, colony, position)
 		
 		if self.state == 'ready' then
 		elseif self.state == 'spawningLocally' then
-			--love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
+			love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
 			drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS)
 			
 		elseif self.state == 'spawningAbroad' then
@@ -180,7 +180,7 @@ function newSpore (planet, colony, position)
 	
 	function s:launchExplorer ()
 		if self.colony == human.colony then
-			self:setVelocityTo(adjustMousePos(love.mouse.getX(), love.mouse.getY()))
+			self:setVelocityTo(adjustPos(love.mouse.getX(), love.mouse.getY()))
 		else
 			self:setCourseTo(self:pickRandomPlanet())
 		end
@@ -283,83 +283,3 @@ function newSpore (planet, colony, position)
 	
 	return s
 end
-
---[[
-
-function updateUnits (planet)
-	for i=1, planet.unitSpaces do
-		if planet.units[i] then
-			local theta = planet.rAngle + ((TAU / planet.unitSpaces) * i)
-			planet.units[i]:update(planet, theta)
-			if planet.units[i]:isDead() then
-				planet.units[i] = nil
-				planet:checkHomeWorld()
-				checkForEndGame()
-			end
-		end
-	end
-end
-
-function newUnit (planet, meme)
-	
-	function u:draw ()
-		self.meme:setToMyColor()
-		if self.growing then
-			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS * self.animationCounter)
-		elseif self.dying then
-			love.graphics.setColor(255, 255, 255, 255 * (1 - self.animationCounter))
-			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS * self.animationCounter * 4)
-			self.meme:setToMyColor()
-			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS * (1 - self.animationCounter))
-			
-			-- alert player to attacks on their home planet
-			if self.planet == human.homeWorld and self.meme == human.meme then
-				love.graphics.setColor(200, 50, 50, 255 * (1 - self.animationCounter))
-				love.graphics.setLineWidth(50)
-				love.graphics.rectangle('line', -OFFSET.x, -OFFSET.y, love.graphics.getWidth(), love.graphics.getHeight())
-				love.graphics.setColor(200, 50, 50)
-				love.graphics.print('HOMEWORLD UNDER ATTACK', -OFFSET.x + love.graphics.getWidth()/2 - 140, -OFFSET.y + love.graphics.getHeight() - 100)
-			end
-			
-		elseif self.flying and self.flyer ~= nil then
-			if self.flyer.attackDrone then
-				drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS)
-			end
-			self.flyer:draw()
-		elseif not self.waiting then
-			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS)
-		end
-	end
-	
-	function u:launchFlyer ()
-		local weightedPlanetIDs = {}
-		local d = 0
-		for _, planet in pairs(planets) do
-			if self.planet.id ~= planet.id and not areConnected(self.planet, planet) then
-				d = vMag(vSub(planet.location, self.planet.location))
-				local worldMag = vMag(newVector(WORLD_SIZE.width, WORLD_SIZE.height))
-				d = (( (worldMag/2 - d) / worldMag )^3)*worldMag
-				d = math.max(math.ceil(d), 1)
-				for i=1, d do
-					table.insert(weightedPlanetIDs, planet.id)
-				end
-			end
-		end
-		
-		local destination = planets[randomElement(weightedPlanetIDs)]
-		self.flying = true
-		local f = newFlyer(self.planet.location, false, self.planet, destination, self.meme.color)
-		if self.meme == human.meme then
-			f:setVelocityTo(adjustMousePos(love.mouse.getX(), love.mouse.getY()))
-			f.humanLaunched = true
-		end
-		self.planet:addFlyer(f)
-		
-		self.dying = true
-		self.animationCounter = 1
-	end
-	
-	return u
-	
-end
-]]--

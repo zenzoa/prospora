@@ -10,6 +10,9 @@ require("connections")
 require("planets")
 require("players")
 
+require("game")
+local shine = require("shine")
+
 require("screenModes")
 require("screenMode-game")
 require("screenMode-win")
@@ -23,8 +26,8 @@ require("screenMode-credits")
 FPS = 60
 UNIT_RADIUS = 5
 SEGMENTS = 60
-UNIVERSE_SIZE = 10
-human = newPlayer()
+FONT_SIZE = 20
+NEW_PLAYER = true
 screenMode = startMode
 soundOn = true
 advancedControls = true --default to false
@@ -33,16 +36,16 @@ function love.load()
 	
 	math.randomseed( os.time() )
 	
-	-- Setup window
+	-- setup window
 	love.window.setTitle("Prospora")
 	love.window.setMode(800, 600, {fullscreen=false, fullscreentype='desktop'})
-	love.graphics.setBackgroundColor(51, 51, 51)
+	love.graphics.setBackgroundColor(0, 0, 0)
 	love.graphics.setLineStyle('smooth')
 	love.graphics.setPointStyle('rough')
 	
 	-- setup fonts
-	font = love.graphics.newFont('assets/furore.otf', 20)
-	fontLarge = love.graphics.newFont('assets/furore.otf', 40)
+	font = love.graphics.newFont('assets/furore.otf', FONT_SIZE)
+	fontLarge = love.graphics.newFont('assets/furore.otf', FONT_SIZE*2)
 	love.graphics.setFont(font)
 	
 	-- setup audio
@@ -60,16 +63,16 @@ function love.load()
 	hitPlanetSound:setVolume(0.5)
 	attackedSound = love.audio.newSource('assets/daphne-in-wonderland-bass-metal-thud.wav', 'static')
 	
-	-- setup tutorial images
-	tutorialImage1 = love.graphics.newImage('assets/tutorial-1.png')
-	tutorialImage2 = love.graphics.newImage('assets/tutorial-2.png')
-	tutorialImage3 = love.graphics.newImage('assets/tutorial-3.png')
-	tutorialImage4 = love.graphics.newImage('assets/tutorial-4.png')
-	tutorialImage5 = love.graphics.newImage('assets/tutorial-5.png')
-	tutorialImage6 = love.graphics.newImage('assets/tutorial-6.png')
-	tutorialImage7 = love.graphics.newImage('assets/tutorial-7.png')
+	-- setup cool vignette effect
+	local vignette = shine.vignette()
+	vignette.parameters = {radius = 0.9, opacity = 0.1}
+	post_effect = vignette
 	
-	screenMode:load()
+	-- setup new game
+	game = newGame()
+	game:load()
+	
+	--screenMode:load()
 end
 
 timeSinceLastUpdate = 0
@@ -77,21 +80,25 @@ timeSinceLastUpdate = 0
 function love.update(dt)
 	timeSinceLastUpdate = timeSinceLastUpdate + dt
 	if (timeSinceLastUpdate >= 1/FPS) then
-		if screenMode.update then screenMode:update() end
+		game:update()
+		--if screenMode.update then screenMode:update() end
 		timeSinceLastUpdate = timeSinceLastUpdate - (1/FPS)
 	end
 end
 
 function love.draw()
-	if screenMode.draw then screenMode:draw() end
+	game:draw()
+	--if screenMode.draw then screenMode:draw() end
 end
 
 function love.mousepressed(x, y, button)
-	if screenMode.mousepressed then screenMode:mousepressed(x, y) end
+	game:mousepressed(x, y)
+	--if screenMode.mousepressed then screenMode:mousepressed(x, y) end
 end
 
 function love.mousereleased(x, y, button)
-	if screenMode.mousereleased then screenMode:mousereleased(x, y) end
+	game:mousereleased(x, y)
+	--if screenMode.mousereleased then screenMode:mousereleased(x, y) end
 end
 
 function checkForEndGame ()
@@ -125,7 +132,7 @@ end
 
 --
 
-function adjustMousePos (x, y)
+function adjustPos (x, y)
 	local v = newVector(x, y)
 	v = vSub(v, OFFSET)
 	v = vDiv(v, ZOOM)

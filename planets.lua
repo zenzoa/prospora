@@ -99,6 +99,10 @@ function newPlanet (sun)
 		love.graphics.setLineWidth(1)
 		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.orbitRadius*ZOOM, SEGMENTS*2)
 		
+		-- draw shadow
+		love.graphics.setColor(0, 0, 0, 25)
+		drawFilledCircle(self.location.x, self.location.y, self.radius*1.1)
+		
 		-- draw homeworld indicator
 		if self.isHomeWorld then
 			self.startingColony:setToMyColor(150)
@@ -246,37 +250,3 @@ function newPlanet (sun)
 	
 	return p
 end
-
-
---[[
-
-function newPlanet (id, sun, unitSpaces, isHomeWorld, meme)\
-	
-	function p:checkHomeWorld ()
-		-- check to see if homeworld has been emptied of its original meme
-		if self.isHomeWorld then
-			local localMemes = 0
-			for i=1, self.unitSpaces do
-				if self.units[i] and self.units[i].meme == self.homeWorldMeme then
-					localMemes = localMemes + 1
-				end
-			end
-			-- if meme has been eradicated from its homeworld, kill all units of that meme everywhere
-			if localMemes == 0 then
-				self.isHomeWorld = false
-				for _, planet in pairs(planets) do
-					for i=1, planet.unitSpaces do
-						if planet.units[i] and planet.units[i].meme == self.homeWorldMeme then
-							planet.units[i].dying = true
-							planet.units[i].animationCounter = 0
-						end
-					end
-				end
-			end
-		end
-	end
-end
-
---
-
-]]--

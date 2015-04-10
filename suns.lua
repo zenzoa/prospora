@@ -53,7 +53,7 @@ function newSun (location, radius)
 	end
 	
 	function s:draw ()
-		love.graphics.setColor(255, 255, 255, 177)
+		love.graphics.setColor(127,127,127)
 		drawFilledCircle(self.location.x, self.location.y, self.radius+self.corona)
 		love.graphics.setColor(255, 255, 255, 255)
 		drawFilledCircle(self.location.x, self.location.y, self.radius)
