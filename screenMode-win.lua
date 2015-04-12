@@ -7,6 +7,5 @@ function winMode:load ()
 	self:addObject(newMenuReturn())
 	
 	resetMusic()
-	winMusic:rewind()
 	if soundOn then winMusic:play() end
 end

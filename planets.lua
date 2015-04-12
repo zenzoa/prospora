@@ -100,7 +100,7 @@ function newPlanet (sun)
 		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.orbitRadius*ZOOM, SEGMENTS*2)
 		
 		-- draw shadow
-		love.graphics.setColor(0, 0, 0, 25)
+		love.graphics.setColor(0, 0, 0, 20)
 		drawFilledCircle(self.location.x, self.location.y, self.radius*1.1)
 		
 		-- draw homeworld indicator

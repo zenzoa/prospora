@@ -135,7 +135,6 @@ function gameMode:mousepressed(x, y)
 					if planet:countFriends(human.colony) > 1 then
 						self.dragging = 'launch'
 					end
-					selectSound:rewind()
 					if soundOn then selectSound:play() end
 		end
 	end
@@ -152,7 +151,6 @@ function gameMode:mousepressed(x, y)
 		elseif advancedControls and collidePointCircle(mousePos, self.handleTime, 20) then
 			self.dragging = 'time'
 		elseif collidePointCircle(mousePos, self.handlePause, 20) then
-			buttonSound:rewind()
 			if soundOn then buttonSound:play() end
 			self.dragging = 'pause'
 		else
@@ -171,7 +169,6 @@ function gameMode:mousereleased (x, y)
 			if human.selectedPlanet:countFriends(human.colony) > 1 then
 				local spore = human.selectedPlanet:findFriend(human.colony)
 				spore:launchExplorer()
-				launchSound:rewind()
 				if soundOn then launchSound:play() end
 			end
 		end

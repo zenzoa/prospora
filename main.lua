@@ -11,26 +11,16 @@ require("planets")
 require("players")
 
 require("game")
+require("interface")
 local shine = require("shine")
 
-require("screenModes")
-require("screenMode-game")
-require("screenMode-win")
-require("screenMode-lose")
-require("screenMode-pause")
-require("screenMode-start")
-require("screenMode-options")
-require("screenMode-tutorial")
-require("screenMode-credits")
-
+FANCY_GRAPHICS = true
 FPS = 60
 UNIT_RADIUS = 5
 SEGMENTS = 60
 FONT_SIZE = 20
 NEW_PLAYER = true
-screenMode = startMode
 soundOn = true
-advancedControls = true --default to false
 
 function love.load()
 	
@@ -64,15 +54,13 @@ function love.load()
 	attackedSound = love.audio.newSource('assets/daphne-in-wonderland-bass-metal-thud.wav', 'static')
 	
 	-- setup cool vignette effect
-	local vignette = shine.vignette()
-	vignette.parameters = {radius = 0.9, opacity = 0.1}
-	post_effect = vignette
+	post_effect_on = setupFancyGraphics()
+	post_effect_off = function(f) f() end
+	post_effect = post_effect_on
 	
 	-- setup new game
 	game = newGame()
 	game:load()
-	
-	--screenMode:load()
 end
 
 timeSinceLastUpdate = 0
@@ -81,24 +69,46 @@ function love.update(dt)
 	timeSinceLastUpdate = timeSinceLastUpdate + dt
 	if (timeSinceLastUpdate >= 1/FPS) then
 		game:update()
-		--if screenMode.update then screenMode:update() end
 		timeSinceLastUpdate = timeSinceLastUpdate - (1/FPS)
 	end
 end
 
 function love.draw()
 	game:draw()
-	--if screenMode.draw then screenMode:draw() end
 end
 
 function love.mousepressed(x, y, button)
 	game:mousepressed(x, y)
-	--if screenMode.mousepressed then screenMode:mousepressed(x, y) end
 end
 
 function love.mousereleased(x, y, button)
 	game:mousereleased(x, y)
-	--if screenMode.mousereleased then screenMode:mousereleased(x, y) end
+end
+
+function love.keypressed(k)
+	if k == 'escape' then
+		game:togglePause()
+	end
+	
+	if k == 'q' then
+		FANCY_GRAPHICS = not FANCY_GRAPHICS
+		if FANCY_GRAPHICS then
+			post_effect = post_effect_on
+		else
+			post_effect = post_effect_off
+		end
+	end
+	
+	if k == 'f' then
+		local isFullscreen = not love.window.getFullscreen()
+		love.window.setFullscreen(isFullscreen)
+		post_effect_on = setupFancyGraphics()
+		if FANCY_GRAPHICS then post_effect = post_effect_on end
+	end
+	
+	if k == ' ' then
+		centerOnSelection()
+	end
 end
 
 function checkForEndGame ()
@@ -130,7 +140,15 @@ function resetMusic ()
 	winMusic:stop()
 end
 
---
+function setupFancyGraphics()
+	local vignette = shine.vignette()
+	vignette.parameters = {radius = .95, opacity = 0.2}
+	local separate_chroma = shine.separate_chroma()
+	separate_chroma.parameters = {radius = 0.5}
+	local filmgrain = shine.filmgrain()
+	filmgrain.parameters = {opacity = 0.05}
+	return separate_chroma:chain(vignette:chain(filmgrain))
+end
 
 function adjustPos (x, y)
 	local v = newVector(x, y)
@@ -143,8 +161,6 @@ function adjustOffset ()
 	OFFSET.x = math.min(0, math.max(-WORLD_SIZE.width * ZOOM + love.graphics.getWidth(), OFFSET.x))
 	OFFSET.y = math.min(0, math.max(-WORLD_SIZE.height * ZOOM + love.graphics.getHeight(), OFFSET.y))
 end
-
---
 
 function drawFilledCircle(x, y, r)
 	love.graphics.circle('fill', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)

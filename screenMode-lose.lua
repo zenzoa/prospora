@@ -7,6 +7,5 @@ function loseMode:load ()
 	self:addObject(newMenuReturn())
 	
 	resetMusic()
-	loseSound:rewind()
 	if soundOn then loseSound:play() end
 end

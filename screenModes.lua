@@ -41,7 +41,6 @@ function newScreenMode (title)
 		for i, b in pairs(self.screenObjects) do
 			if b.type == 'button' and y > ypos-10 and y < ypos+LINEHEIGHT-10 then
 				self.mouseHeldFor = b
-				buttonSound:rewind()
 				if soundOn then buttonSound:play() end
 			end
 			ypos = ypos + LINEHEIGHT

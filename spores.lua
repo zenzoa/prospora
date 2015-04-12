@@ -39,7 +39,7 @@ function newSpore (planet, colony, position)
 			end
 			
 		elseif self.state == 'spawningLocally' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			self.child.width = 1 - self.animationCounter
 			self.child.location = self.planet:getSporeLocation(self.child)
 			if self.animationCounter <= 0 then
@@ -50,7 +50,7 @@ function newSpore (planet, colony, position)
 			end
 			
 		elseif self.state == 'spawningAbroad' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			if self.animationCounter > 1.5 then
 			elseif self.animationCounter > 0 then
 				self.child.width = (1.5 - self.animationCounter)/1.5
@@ -66,7 +66,7 @@ function newSpore (planet, colony, position)
 			end
 			
 		elseif self.state == 'attackingLocally' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			-- move towards target, decrease self.width
 			--self.width = self.animationCounter
 			self.rotationAngle = TAU*self.animationCounter
@@ -78,7 +78,7 @@ function newSpore (planet, colony, position)
 			end
 			
 		elseif self.state == 'attackingAbroad' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			-- fly to new planet across connection, decreasing self.width meanwhile
 			self.width = self.animationCounter
 			if self.animationCounter <= 0 then
@@ -89,29 +89,29 @@ function newSpore (planet, colony, position)
 			end
 			
 		elseif self.state == 'defendingLocally' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			-- dying animation
+			self.width = self.animationCounter
 			if self.animationCounter <= 0 then
 				self.state = 'dead'
 				if self.colony == human.colony then
-					attackedSound:rewind()
 					if soundOn then attackedSound:play() end
 				end
 			end
 			
 		elseif self.state == 'defendingAbroad' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			-- dying animation after delay for attacker to arrive
+			self.width = self.animationCounter
 			if self.animationCounter <= 0 then
 				self.state = 'dead'
 				if self.colony == human.colony then
-					attackedSound:rewind()
 					if soundOn then attackedSound:play() end
 				end
 			end
 			
 		elseif self.state == 'exploring' then
-			s:updateAnimationCounter()
+			self:updateAnimationCounter()
 			self.location = vAdd(self.location, vDiv(self.velocity, TURN_TIME))
 			self.width = self.animationCounter
 			if self.animationCounter <= 0 then
@@ -123,7 +123,6 @@ function newSpore (planet, colony, position)
 				table.insert(planetConnections, newConnection(self.planet, planet))
 				self.state = 'dead'
 				if self.colony == human.colony then
-					hitPlanetSound:rewind()
 					if soundOn then hitPlanetSound:play() end
 				end
 			end
@@ -142,7 +141,7 @@ function newSpore (planet, colony, position)
 		
 		if self.state == 'ready' then
 		elseif self.state == 'spawningLocally' then
-			love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('spawn', self.location.x*ZOOM, self.location.y*ZOOM)
 			drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS)
 			
 		elseif self.state == 'spawningAbroad' then
@@ -151,19 +150,19 @@ function newSpore (planet, colony, position)
 			elseif self.animationCounter > 0 then
 				drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
 			end
-			love.graphics.print('spawnA', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('spawnA', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'attackingLocally' then
-			love.graphics.print('attack', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('attack', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'attackingAbroad' then
-			love.graphics.print('attackA', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('attackA', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'defendingLocally' then
-			love.graphics.print('die', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('die', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'defendingAbroad' then
-			love.graphics.print('die', self.location.x*ZOOM, self.location.y*ZOOM)
+			--love.graphics.print('die', self.location.x*ZOOM, self.location.y*ZOOM)
 			
 		elseif self.state == 'exploring' then
 			radius = radius/2
@@ -196,7 +195,7 @@ function newSpore (planet, colony, position)
 			self.child = newSpore(self.planet, self.colony)
 			self.child.state = 'placeholder'
 			self.child.width = 0
-			self.planet:insertSpore(self.position+1, self.child)
+			self.planet:insertSpore(self.position, self.child)
 		end
 	end
 	
