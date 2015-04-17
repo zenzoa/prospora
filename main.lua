@@ -1,3 +1,11 @@
+--todo:
+--finish messages/triggers/arrows/buttons
+--make tutorial world
+--saves!
+--finish sounds/pitch variation
+--reimplement red death frame/
+--separate out strings
+
 require("maths")
 require("vectors")
 require("strings")
@@ -54,9 +62,7 @@ function love.load()
 	attackedSound = love.audio.newSource('assets/daphne-in-wonderland-bass-metal-thud.wav', 'static')
 	
 	-- setup cool vignette effect
-	post_effect_on = setupFancyGraphics()
-	post_effect_off = function(f) f() end
-	post_effect = post_effect_on
+	post_effect = setupFancyGraphics()
 	
 	-- setup new game
 	game = newGame()
@@ -93,17 +99,16 @@ function love.keypressed(k)
 	if k == 'q' then
 		FANCY_GRAPHICS = not FANCY_GRAPHICS
 		if FANCY_GRAPHICS then
-			post_effect = post_effect_on
+			post_effect = setupFancyGraphics()
 		else
-			post_effect = post_effect_off
+			post_effect = function(f) f() end
 		end
 	end
 	
 	if k == 'f' then
 		local isFullscreen = not love.window.getFullscreen()
 		love.window.setFullscreen(isFullscreen)
-		post_effect_on = setupFancyGraphics()
-		if FANCY_GRAPHICS then post_effect = post_effect_on end
+		if FANCY_GRAPHICS then post_effect = setupFancyGraphics() end
 	end
 	
 	if k == ' ' then
@@ -111,36 +116,9 @@ function love.keypressed(k)
 	end
 end
 
-function checkForEndGame ()
-	local noEnemyHomeworlds = true
-	for _, planet in pairs(planets) do
-		if planet.isHomeWorld and planet.homeWorldMeme ~= human.colony then
-			noEnemyHomeworlds = false
-		end
-	end
-	if noEnemyHomeworlds then
-		win()
-	elseif not human.homeWorld.isHomeWorld then
-		lose()
-	end
-end
-
-function win ()
-	switchToMode(winMode)
-end
-
-function lose ()
-	switchToMode(loseMode)
-end
-
-function resetMusic ()
-	gameMusic:rewind()
-	gameMusic:stop()
-	winMusic:rewind()
-	winMusic:stop()
-end
-
 function setupFancyGraphics()
+	love.graphics.setBackgroundColor(0,0,0)
+	love.graphics.setColor(255,255,255)
 	local vignette = shine.vignette()
 	vignette.parameters = {radius = .95, opacity = 0.2}
 	local separate_chroma = shine.separate_chroma()

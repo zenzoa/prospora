@@ -35,3 +35,11 @@ function randomVector ()
 	local angle = randomRealBetween(0, TAU)
 	return newVector(math.cos(angle), math.sin(angle))
 end
+
+function crossProduct (vectorA, vectorB)
+	
+end
+
+function dotProduct (vectorA, vectorB)
+	return vectorA.x*vectorB.x + vectorA.y*vectorB.y
+end

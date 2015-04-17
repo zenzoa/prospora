@@ -3,6 +3,18 @@ strings = {
 	spawn = 'spawn',
 	travel = 'travel',
 	
+	firstClickHome = "These are spores in your colony",
+	firstOneSporeLeft = "Increase your colony's spawn rate to generate more spores",
+	firstConnection = "Increase your colony's travel rate to get spores to spawn and attack across a connection",
+	firstGeneChange = "Now it's time to explore",
+	firstEnemyHomeInView = "You've discovered an enemy spore colony - Destroy all enemy home planets to win the game",
+	firstBattle = "Increase your colony's attack rate to defend and expand your territory",
+	startTutorial = "This is your home planet",
+	winTutorial = "Your colony was triumphant",
+	loseTutorial = "Alas, your colony was destroyed",
+	win = "A tiny universe, conquered",
+	lose = "You have been eradicated",
+	
 	universeSmall = 'universe size: small',
 	universeMedium = 'universe size: medium',
 	universeLarge = 'universe size: large',

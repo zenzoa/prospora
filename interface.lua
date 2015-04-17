@@ -1,5 +1,9 @@
 --[[
 
+FIX:
+- attack-abroad spore not showing up
+- weird flickering when spawning locally
+
 (all fade in and then fade out unless noted)
 
 First open:
@@ -77,29 +81,58 @@ function newInterface ()
 	local i = {}
 	
 	i.elements = {}
-	
 	table.insert(i.elements, newSlider('attack', 1))
 	table.insert(i.elements, newSlider('spawn', 2))
 	table.insert(i.elements, newSlider('travel', 3))
 	
+	i.flags = {} -- 0 = hasn't happened yet, 1 = show the thing!, 2 = it's happened, don't show again
+	i.flags.firstClickHome = 0
+	i.flags.firstOneSporeLeft = 0
+	i.flags.firstConnection = 0
+	i.flags.firstGeneChange = 0
+	i.flags.firstEnemyHomeInView = 0 --todo
+	i.flags.firstBattle = 0
+	i.flags.startTutorial = 0 --todo
+	i.flags.winTutorial = 0 --todo
+	i.flags.loseTutorial = 0 --todo
+	i.flags.win = 0 --todo
+	i.flags.lose = 0 --todo
+	
 	function i:update ()
-		for _, e in pairs(self.elements) do
-			e:update()
+		for i, e in pairs(self.elements) do
+			local kill = e:update()
+			if kill then
+				table.remove(self.elements, i)
+			end
+		end
+		for flagKey, flagValue in pairs(self.flags) do
+			if flagValue == 1 then
+				table.insert(self.elements, 1, newMessage(flagKey))
+			end
 		end
 	end
 	
 	function i:draw ()
+		local currentPosition = 1
 		for _, e in pairs(self.elements) do
-			e:draw()
+			if e.type == 'message' then
+				e:draw(currentPosition)
+				currentPosition = currentPosition + 1
+			else
+				e:draw()
+			end
 		end
 	end
 	
 	function i:mousepressed (x, y)
 		local busy = false
 		for _, e in pairs(self.elements) do
-			if x >= e.actArea.x and x <= e.actArea.x+e.actArea.width and y >= e.actArea.y and y <= e.actArea.y+e.actArea.height then
+			if e.actArea and x >= e.actArea.x and x <= e.actArea.x+e.actArea.width and y >= e.actArea.y and y <= e.actArea.y+e.actArea.height then
 				e:press(x, y)
 				busy = true
+			end
+			if e.type == 'message' then
+				e.fading = true
 			end
 		end
 		return busy
@@ -119,9 +152,49 @@ function newInterface ()
 	return i
 end
 
+function newMessage (flagKey)
+	local m = {}
+	m.type = 'message'
+	m.text = strings[flagKey]
+	m.flag = flagKey
+	game.interface.flags[flagKey] = 1.001
+	--m.pressed = false
+	m.fading = false
+	
+	function m:update ()
+		if self.fading then
+			game.interface.flags[self.flag] = game.interface.flags[self.flag] * 1.002
+			if game.interface.flags[self.flag] >= 2 then
+				return true
+			end
+		end
+	end
+	
+	function m:draw (order)
+		love.graphics.setFont(font)
+		love.graphics.setColor(0,0,0,(2-game.interface.flags[self.flag])*64)
+		love.graphics.rectangle('fill', 0, math.max(love.graphics.getHeight()*.05, 20)+order*120-10, love.graphics.getWidth(), 120)
+		--love.graphics.printf(self.text, 101, (order+3)*math.max(love.graphics.getHeight()*.05, 20)+1, love.graphics.getWidth()-198, 'center')
+		love.graphics.setColor(255,255,255,(2-game.interface.flags[self.flag])*255)
+		love.graphics.printf(self.text, 100, math.max(love.graphics.getHeight()*.05, 20)+order*120, love.graphics.getWidth()-200, 'center')
+	end
+	
+	--[[function m:press (x, y)
+		self.pressed = true
+	end
+	
+	function m:release (x, y)
+		self.pressed = false
+	end]]--
+	
+	return m
+	
+end
+
 function newSlider (stat, order)
 	local s = {}
 	
+	s.type = 'slider'
 	s.order = order
 	s.pos = {x=0, y=0}
 	s.stat = stat
@@ -139,6 +212,9 @@ function newSlider (stat, order)
 			local newGeneStat = newX/maxWidth
 			human.colony[stat] = newGeneStat
 			human.colony:adjustGenes()
+			if game.interface.flags.firstGeneChange == 0 and game.interface.flags.firstConnection > 0 then
+				game.interface.flags.firstGeneChange = 1
+			end
 		end
 		
 		self.sliderWidth = human.colony[stat] * maxWidth
@@ -178,6 +254,10 @@ function newSlider (stat, order)
 			love.graphics.setColor(255, 255, 255)
 			love.graphics.rectangle('fill', self.actArea.x, self.actArea.y, self.actArea.width, self.actArea.height)
 		end
+		
+		love.graphics.setLineWidth(1)
+		love.graphics.setColor(0, 170, 250)
+		--drawTriangle(600, 400, 30, 'line')
 	end
 	
 	function s:press (x, y)
@@ -191,4 +271,32 @@ function newSlider (stat, order)
 	return s
 	
 end
+
+--[[
+function drawTriangle (x, y, r, style)
+	style = style or 'fill'
+	
+	local v = vMul(newVector(math.cos(PI/6), math.sin(PI/6)), r)
+	local corner1 = newVector(x, y-r)
+	local corner2 = newVector(x + v.x, y + v.y)
+	local corner3 = newVector(x - v.x, y + v.y)
+	
+	love.graphics.polygon(style, corner1.x, corner1.y, corner2.x, corner2.y, corner3.x, corner3.y)
+	
+	local side1 = vAdd(corner1, corner2)
+	local side2 = vAdd(corner2, corner3)
+	local side3 = vAdd(corner3, corner1)
+	
+	local mX = love.mouse.getX()
+	local mY = love.mouse.getY()
+	local mR = math.sqrt(love.graphics.getWidth()^2 + love.graphics.getHeight()^2)
+	local v1 = vMul(newVector(math.cos(PI/2), math.sin(PI/2)), mR)
+	local v2 = vMul(newVector(math.cos(-PI/6), math.sin(-PI/6)), mR)
+	local v3 = vMul(newVector(math.cos(-PI*(5/6)), math.sin(-PI*(5/6))), mR)
+	
+	love.graphics.line(mX, mY, mX+v1.x, mY+v1.y)
+	love.graphics.line(mX, mY, mX+v2.x, mY+v2.y)
+	love.graphics.line(mX, mY, mX+v3.x, mY+v3.y)
+end
+]]--
 	

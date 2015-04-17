@@ -27,11 +27,21 @@ function updatePlanets ()
 end
 
 function drawPlanets ()
+	for _, planet in pairs(planets) do
+		planet:drawOrbit()
+	end
+	
 	for _, planetConnection in pairs(planetConnections) do
 		planetConnection:draw()
 	end
 	
 	for _, planet in pairs(planets) do
+		planet:drawSporesOffPlanet()
+	end
+	
+	for _, planet in pairs(planets) do
+		planet:drawShadow()
+		planet:drawSpores()
 		planet:draw()
 	end
 end
@@ -94,39 +104,41 @@ function newPlanet (sun)
 	end
 	
 	function p:draw ()
-		-- draw orbit
-		love.graphics.setColor(255, 255, 255, 10)
-		love.graphics.setLineWidth(1)
-		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.orbitRadius*ZOOM, SEGMENTS*2)
-		
-		-- draw shadow
-		love.graphics.setColor(0, 0, 0, 20)
-		drawFilledCircle(self.location.x, self.location.y, self.radius*1.1)
-		
-		-- draw homeworld indicator
 		if self.isHomeWorld then
 			self.startingColony:setToMyColor(150)
 			love.graphics.setLineWidth(1)
 			love.graphics.circle('line', self.location.x*ZOOM, self.location.y*ZOOM, (self.radius+UNIT_RADIUS*4)*ZOOM, SEGMENTS)
 		end
 		
-		-- draw spores
-		for _, spore in pairs(self.spores) do
-			spore:draw()
-		end
-		for _, spore in pairs(self.sporesOffPlanet) do
-			spore:draw()
-		end
-		
-		-- draw planet
 		if self.id == human.selectedPlanet.id then
 			love.graphics.setColor(200, 200, 200)
 		else
 			love.graphics.setColor(100, 100, 100)
 		end
 		drawFilledCircle(self.location.x, self.location.y, self.radius)
-		
-		--love.graphics.print(tableSize(self.spores), (self.location.x+self.radius)*ZOOM, (self.location.y+self.radius)*ZOOM)
+	end
+	
+	function p:drawOrbit ()
+		love.graphics.setColor(255, 255, 255, 10)
+		love.graphics.setLineWidth(1)
+		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.orbitRadius*ZOOM, SEGMENTS*2)
+	end
+	
+	function p:drawShadow ()
+		love.graphics.setColor(0, 0, 0, 20)
+		drawFilledCircle(self.location.x, self.location.y, self.radius+1)
+	end
+	
+	function p:drawSpores ()
+		for _, spore in pairs(self.spores) do
+			spore:draw()
+		end
+	end
+	
+	function p:drawSporesOffPlanet ()
+		for _, spore in pairs(self.sporesOffPlanet) do
+			spore:draw()
+		end
 	end
 	
 	function p:getSporeLocation (mySpore)

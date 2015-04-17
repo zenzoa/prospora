@@ -25,7 +25,6 @@ function gameMode:load ()
 	
 	self:updateInterface()
 	centerOnSelection()
-	adjustOffset()
 	
 	resetMusic()
 	if soundOn then gameMusic:play() end
@@ -198,7 +197,6 @@ function gameMode:checkDragging ()
 	elseif self.dragging == 'zoom' then
 		ZOOM = 1.33 - math.min(1.0, math.max(0.33, (love.graphics.getWidth()-love.mouse.getX()+37) / (self.barWidth/2)))
 		centerOnSelection()
-		adjustOffset()
 	elseif self.dragging == 'time' then
 		TURN_TIME = math.max(10, 60 - (60 * (math.min(love.mouse.getX()-30, self.barWidth/2)) / (self.barWidth/2)))
 	end
