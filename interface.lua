@@ -1,15 +1,5 @@
 --[[
 
-FIX:
-- attack-abroad spore not showing up
-- weird flickering when spawning locally
-
-(all fade in and then fade out unless noted)
-
-First open:
-Welcome to Prospora
-- skip tutorial
-
 Later opens (start up previous game - could be tutorial! - if there is one, or new game if there isn't, paused)
 or Paused:
 Prospora
@@ -21,174 +11,318 @@ Prospora
 - new tutorial
 - quit
 
-Start tutorial:
-This is your home planet. (point to home planet)
-_Click to select it.
-(make nil a possible planet selection, and make it the initial default)
-
-First clicking of home planet:
-These are spores in your colony. (point to spore)
-Try launching one toward another planet to make a connection. (point to nearest empty planet)
-_Click and drag away from the planet to launch a spore.
-
-First time there is only one spore on a planet:
-Increase your colony's spawn rate to generate more spores. (point to spawn bar)
-_Drag the spawn bar to the right.
-
-First time making a connection with an empty planet:
-Increase your colony's travel rate to get spores to spawn and attack across a connection. (point to travel bar)
-_Drag the travel bar to the right.
-
-First time changing the bars after making a connection (?):
-Now it's time to explore. (point to empty space)
-_Click and drag empty space to move your viewpoint.
-
-First time an enemy home planet comes into view:
-You've discovered an enemy spore colony. (point to enemy home planet)
-Destroy all enemy home planets to win the game.
-
-First time making a connection with an enemy-inhabited planet:
-Increase your colony's attack rate to defend and expand your territory. (point to attack bar)
-_Drag the attack bar to the right.
-
-Losing tutorial:
-Alas, your colony was destroyed
-- restart tutorial
-- start full game
-- quit
-
-Winning tutorial:
-Hurrah, your colony was triumphant
-- restart tutorial
-- start full game
-- quit
-
-Losing regular game:
-You have been eradicated
-- new game
-- new tutorial
-- quit
-
-Winning regular game:
-A tiny universe, conquered
-- new game
-- new tutorial
-- quit
-
 ]]--
 
 function newInterface ()
 	local i = {}
 	
-	i.elements = {}
-	table.insert(i.elements, newSlider('attack', 1))
-	table.insert(i.elements, newSlider('spawn', 2))
-	table.insert(i.elements, newSlider('travel', 3))
+	i.attackSlider = newSlider('attack', 1)
+	i.spawnSlider = newSlider('spawn', 2)
+	i.travelSlider = newSlider('travel', 3)
+	i.sliders = {i.attackSlider, i.spawnSlider, i.travelSlider}
 	
-	i.flags = {} -- 0 = hasn't happened yet, 1 = show the thing!, 2 = it's happened, don't show again
-	i.flags.firstClickHome = 0
-	i.flags.firstOneSporeLeft = 0
-	i.flags.firstConnection = 0
-	i.flags.firstGeneChange = 0
-	i.flags.firstEnemyHomeInView = 0 --todo
-	i.flags.firstBattle = 0
-	i.flags.startTutorial = 0 --todo
-	i.flags.winTutorial = 0 --todo
-	i.flags.loseTutorial = 0 --todo
-	i.flags.win = 0 --todo
-	i.flags.lose = 0 --todo
+	i.messages = {}
+	i.allMessages = {}
+	
+	i.titleOpacity = .8
 	
 	function i:update ()
-		for i, e in pairs(self.elements) do
-			local kill = e:update()
-			if kill then
-				table.remove(self.elements, i)
+		if self.titleOpacity > 0 then
+			self.titleOpacity = self.titleOpacity - 0.003
+		end
+
+		for _, s in pairs(self.sliders) do
+			s:update()
+		end
+	
+		for i, m in pairs(self.messages) do
+			if m:update() then
+				table.remove(self.messages, i)
 			end
 		end
-		for flagKey, flagValue in pairs(self.flags) do
-			if flagValue == 1 then
-				table.insert(self.elements, 1, newMessage(flagKey))
-			end
-		end
+		
+		if TUTORIAL then self:checkFlags() end
 	end
 	
 	function i:draw ()
-		local currentPosition = 1
-		for _, e in pairs(self.elements) do
-			if e.type == 'message' then
-				e:draw(currentPosition)
-				currentPosition = currentPosition + 1
-			else
-				e:draw()
-			end
+		for _, s in pairs(self.sliders) do
+			s:draw()
 		end
+	
+		for _, m in pairs(self.messages) do
+			m:draw()
+		end
+		
+		love.graphics.setColor(0,0,0, 255*self.titleOpacity)
+		love.graphics.rectangle('fill', 0,0, love.graphics.getWidth(), love.graphics.getHeight())
+		love.graphics.setColor(255, 255, 255, 255*self.titleOpacity)
+		love.graphics.setFont(fontTitle)
+		love.graphics.printf(strings.prospora, 0, love.graphics.getHeight()/2-FONT_SIZE*4, love.graphics.getWidth(), 'center')
 	end
 	
 	function i:mousepressed (x, y)
 		local busy = false
-		for _, e in pairs(self.elements) do
-			if e.actArea and x >= e.actArea.x and x <= e.actArea.x+e.actArea.width and y >= e.actArea.y and y <= e.actArea.y+e.actArea.height then
-				e:press(x, y)
+		
+		if self.messages[1] and self.messages[1]:press(x, y) then busy = true end
+	
+		for _, s in pairs(self.sliders) do
+			if x >= s.actArea.x and x <= s.actArea.x+s.actArea.width and y >= s.actArea.y and y <= s.actArea.y+s.actArea.height then
+				s:press(x, y)
 				busy = true
 			end
-			if e.type == 'message' then
-				e.fading = true
-			end
 		end
+		
 		return busy
 	end
 	
 	function i:mousereleased (x, y)
 		local busy = false
-		for _, e in pairs(self.elements) do
-			if e.pressed then
-				e:release(x, y)
-				busy = true
+		
+		if self.messages[1] and self.messages[1]:release(x, y) then busy = true end
+		
+		for _, s in pairs(self.sliders) do
+			if s:release(x, y) then busy = true end
+		end
+			
+		return busy
+	end
+	
+	function i:addMessage(newMessage)
+		for _, m in pairs(self.messages) do
+			m.fading = true
+			if m.hotspot then m.hotspot.fading = true end
+		end
+		table.insert(self.messages, 1, newMessage)
+	end
+	
+	function i:newGame ()
+		self.messages = {}
+	end
+	
+	function i:newTutorial ()
+		
+		self.messages = {}
+		self.allMessages = createTutorialMessages()
+		self:addMessage(self.allMessages.selectHomeWorld)
+		
+	end
+	
+	function i:checkFlags()
+		if flags.selectHomeWorld then
+			flags.allowLaunching = true
+			if self.messages[1] and self.messages[1].flag == 'selectHomeWorld' then
+				self:addMessage(self.allMessages.makeConnection)
+			elseif flags.makeConnection then
+				if self.messages[1] and self.messages[1].flag == 'makeConnection' then
+					self:addMessage(self.allMessages.increaseTravel)
+					flags.increaseTravel = false
+				elseif flags.increaseTravel then
+					if self.messages[1] and self.messages[1].flag == 'increaseTravel' then
+						self:addMessage(self.allMessages.shiftView)
+					elseif flags.shiftView then
+						if self.messages[1] and self.messages[1].flag == 'shiftView' then
+							self.messages[1].fading = true
+						elseif flags.enemyHomeInView then
+							flags.allowEnemyConnections = true
+							if not self.allMessages.enemyHomeInView.alreadyShown then
+								self:addMessage(self.allMessages.enemyHomeInView)
+								self.allMessages.enemyHomeInView.alreadyShown = true
+							end
+							if flags.underAttack then
+								if not self.allMessages.increaseAttack.alreadyShown then
+									self:addMessage(self.allMessages.increaseAttack)
+									self.allMessages.increaseAttack.alreadyShown = true
+									flags.increaseAttack = false
+								end
+								if flags.increaseAttack then
+									if self.messages[1] and self.messages[1].flag == 'increaseAttack' then
+										self:addMessage(self.allMessages.pause)
+									end
+								end
+							end
+						end
+					end
+				end
+			end
+			if flags.oneSporeLeft then
+				if not self.messages[1] and not self.allMessages.increaseSpawn.alreadyShown then
+					self:addMessage(self.allMessages.increaseSpawn)
+					self.allMessages.increaseSpawn.alreadyShown = true
+					flags.increaseSpawn = false
+				end
+				if flags.increaseSpawn then
+					if self.messages[1] and self.messages[1].flag == 'increaseSpawn' then
+						self.messages[1].fading = true
+					end
+				end
 			end
 		end
-		return busy
+		if flags.win then
+		elseif flags.lose then
+		end
 	end
 	
 	return i
 end
 
-function newMessage (flagKey)
+function newMessage (flag, text)
 	local m = {}
-	m.type = 'message'
-	m.text = strings[flagKey]
-	m.flag = flagKey
-	game.interface.flags[flagKey] = 1.001
-	--m.pressed = false
+	m.flag = flag
+	
+	m.pressed = false
+	m.pauseGame = false
+	
+	m.text = text
+	m.buttons = {}
+	m.hotspot = nil
+	
+	m.opacity = 1
 	m.fading = false
+	m.menuHeight = 0
+	m.menuY = 0
+	m.lineHeight = FONT_SIZE*2
 	
 	function m:update ()
+		if self.hotspot then self.hotspot:update() end
+		
+		self:updatePosition()
 		if self.fading then
-			game.interface.flags[self.flag] = game.interface.flags[self.flag] * 1.002
-			if game.interface.flags[self.flag] >= 2 then
+			if self.fadeOnClick then
+				self.opacity = self.opacity * .997
+			else
+				self.opacity = self.opacity * .95
+			end
+			if self.opacity < .01 then
 				return true
 			end
 		end
 	end
 	
-	function m:draw (order)
-		love.graphics.setFont(font)
-		love.graphics.setColor(0,0,0,(2-game.interface.flags[self.flag])*64)
-		love.graphics.rectangle('fill', 0, math.max(love.graphics.getHeight()*.05, 20)+order*120-10, love.graphics.getWidth(), 120)
-		--love.graphics.printf(self.text, 101, (order+3)*math.max(love.graphics.getHeight()*.05, 20)+1, love.graphics.getWidth()-198, 'center')
-		love.graphics.setColor(255,255,255,(2-game.interface.flags[self.flag])*255)
-		love.graphics.printf(self.text, 100, math.max(love.graphics.getHeight()*.05, 20)+order*120, love.graphics.getWidth()-200, 'center')
+	function m:draw ()
+		if self.hotspot then self.hotspot:draw() end
+		
+		local y = self.menuY
+		love.graphics.setColor(0,0,0, 127*self.opacity)
+		love.graphics.rectangle('fill', 0, y, love.graphics.getWidth(), self.menuHeight)
+		
+		y = y + self.lineHeight/2
+		love.graphics.setFont(fontMessage)
+		love.graphics.setColor(255,255,255, 255*self.opacity)
+		love.graphics.printf(self.text, 100, y, love.graphics.getWidth()-200, 'left')
+		
+		y = y + self.lineHeight*self:countLines()
+		for _, b in pairs(self.buttons) do
+			love.graphics.setFont(fontMessageSmall)
+			if b.func and love.mouse.getY() > y and love.mouse.getY() < y + FONT_SIZE then
+				love.graphics.setColor(0, 170, 250, 255*self.opacity)
+			else
+				love.graphics.setColor(255,255,255, 255*self.opacity)
+			end
+			love.graphics.printf(b.text, 100, y, love.graphics.getWidth()-200, 'left')
+			y = y + self.lineHeight
+		end
 	end
 	
-	--[[function m:press (x, y)
-		self.pressed = true
+	function m:updatePosition ()
+		local numButtons = tableSize(self.buttons)
+		self.menuHeight = (numButtons+self:countLines()+1) * self.lineHeight
+		self.menuY = love.graphics.getHeight() - self.menuHeight
+	end
+	
+	function m:addButton (text, func)
+		table.insert(self.buttons, {text=text, func=func})
+	end
+	
+	function m:press (x, y)
+		if self.hotspot and collidePointCircle(newVector(x,y), self.hotspot.positionFunction(), self.hotspot.r*1.5) then
+			self.hotspot:press(x, y)
+		end
+
+		local buttonY = self.menuY + self.lineHeight/2 + self.lineHeight*self:countLines()
+		for _, b in pairs(self.buttons) do
+			if y > buttonY and y < buttonY + FONT_SIZE then
+				b.pressed = true
+				if soundOn then
+					buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
+					buttonSound:play()
+				end
+			end
+			buttonY = buttonY + self.lineHeight
+		end
 	end
 	
 	function m:release (x, y)
-		self.pressed = false
-	end]]--
+		local buttonY = self.menuY + self.lineHeight/2 + self.lineHeight*self:countLines()
+		for _, b in pairs(self.buttons) do
+			if b.pressed and b.func and y > buttonY and y < buttonY + FONT_SIZE then
+				b:func()
+			end
+			buttonY = buttonY + self.lineHeight
+		end
+		
+		if self.hotspot and self.hotspot.pressed then self.hotspot:release(x,y) end
+		
+		if self.fadeOnClick then
+			self.fading = true
+			if self.hotspot then self.hotspot.fading = true end
+		end
+	end
+	
+	function m:countLines()
+		return 1+select(2, self.text:gsub('\n', '\n'))
+	end
+
+	m:updatePosition()
 	
 	return m
+end
+
+function newHotSpot (positionFunction)
+	local h = {}
+	h.type = 'hotspot'
+	h.positionFunction = positionFunction
+	h.r = 30
+	h.expand = 0
+	h.pressed = false
+	h.opacity = 1
+	h.fading = false
 	
+	function h:update ()
+		if self.fading then
+			self.opacity = self.opacity * .9
+			if self.opacity <= 0.1 then
+				return true
+			end
+		end
+		self.expand = self.expand + TAU/60
+		if self.expand > TAU then self.expand = 0 end
+	end
+	
+	function h:draw ()
+		love.graphics.setColor(255,255,255,self.opacity*127)
+		local pos, newR = self.positionFunction()
+		local r = newR or self.r
+		if self.pressed then
+			r = r*1.5
+		else
+			r = r + r*(1+math.sin(self.expand))*.1
+		end
+		drawFilledCircle(pos.x, pos.y, r)
+	end
+	
+	function h:press (x, y)
+		self.pressed = true
+		if soundOn then
+			buttonSound:setPitch(1*randomRealBetween(.9, 1.1))
+			buttonSound:play()
+		end
+	end
+	
+	function h:release (x, y)
+		self.pressed = false
+	end
+	
+	return h
 end
 
 function newSlider (stat, order)
@@ -196,7 +330,7 @@ function newSlider (stat, order)
 	
 	s.type = 'slider'
 	s.order = order
-	s.pos = {x=0, y=0}
+	s.pos = newVector(0,0)
 	s.stat = stat
 	s.actArea = {x=0, y=0, width=45, height=15}
 	s.pressed = false
@@ -212,8 +346,12 @@ function newSlider (stat, order)
 			local newGeneStat = newX/maxWidth
 			human.colony[stat] = newGeneStat
 			human.colony:adjustGenes()
-			if game.interface.flags.firstGeneChange == 0 and game.interface.flags.firstConnection > 0 then
-				game.interface.flags.firstGeneChange = 1
+			if self.stat == 'spawn' then
+				flags.increaseSpawn = true
+			elseif self.stat == 'attack' then
+				flags.increaseAttack = true
+			elseif self.stat == 'travel' then
+				flags.increaseTravel = true
 			end
 		end
 		
@@ -254,49 +392,29 @@ function newSlider (stat, order)
 			love.graphics.setColor(255, 255, 255)
 			love.graphics.rectangle('fill', self.actArea.x, self.actArea.y, self.actArea.width, self.actArea.height)
 		end
-		
-		love.graphics.setLineWidth(1)
-		love.graphics.setColor(0, 170, 250)
-		--drawTriangle(600, 400, 30, 'line')
 	end
 	
 	function s:press (x, y)
 		self.pressed = true
+		if soundOn then
+			buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
+			buttonSound:play()
+		end
 	end
 	
 	function s:release (x, y)
-		self.pressed = false
+		if self.pressed then
+			self.pressed = false
+			return true
+		end
+	end
+	
+	function s:getCenter ()
+		local x = self.actArea.x + self.actArea.width/2
+		local y = self.actArea.y + self.actArea.height/2
+		return newVector(x,y)
 	end
 	
 	return s
-	
 end
-
---[[
-function drawTriangle (x, y, r, style)
-	style = style or 'fill'
-	
-	local v = vMul(newVector(math.cos(PI/6), math.sin(PI/6)), r)
-	local corner1 = newVector(x, y-r)
-	local corner2 = newVector(x + v.x, y + v.y)
-	local corner3 = newVector(x - v.x, y + v.y)
-	
-	love.graphics.polygon(style, corner1.x, corner1.y, corner2.x, corner2.y, corner3.x, corner3.y)
-	
-	local side1 = vAdd(corner1, corner2)
-	local side2 = vAdd(corner2, corner3)
-	local side3 = vAdd(corner3, corner1)
-	
-	local mX = love.mouse.getX()
-	local mY = love.mouse.getY()
-	local mR = math.sqrt(love.graphics.getWidth()^2 + love.graphics.getHeight()^2)
-	local v1 = vMul(newVector(math.cos(PI/2), math.sin(PI/2)), mR)
-	local v2 = vMul(newVector(math.cos(-PI/6), math.sin(-PI/6)), mR)
-	local v3 = vMul(newVector(math.cos(-PI*(5/6)), math.sin(-PI*(5/6))), mR)
-	
-	love.graphics.line(mX, mY, mX+v1.x, mY+v1.y)
-	love.graphics.line(mX, mY, mX+v2.x, mY+v2.y)
-	love.graphics.line(mX, mY, mX+v3.x, mY+v3.y)
-end
-]]--
 	

@@ -10,6 +10,7 @@ function initPlanets (numPlanets)
 			planet.isHomeWorld = true
 			planet.startingColony = human.colony
 			planet.maxSpores = 6
+			human.homeWorld = planet
 			human.selectedPlanet = planet
 		elseif i <= startingColonies then
 			-- create ai homeworlds
@@ -23,6 +24,9 @@ end
 function updatePlanets ()
 	for _, planet in pairs(planets) do
 		planet:update()
+		if planet.isHomeWorld and planet ~= human.homeWorld and planet:onScreen() then
+			flags.enemyHomeInView = true
+		end
 	end
 end
 
@@ -77,8 +81,8 @@ function newPlanet (sun)
 			for i=1, self.maxSpores do
 				table.insert(self.spores, newSpore(self, self.startingColony, i))
 			end
-			self.radius = self.maxSpores * UNIT_RADIUS / PI
 		end
+		self.radius = self.maxSpores * UNIT_RADIUS / PI
 	end
 	
 	function p:update ()
@@ -110,11 +114,7 @@ function newPlanet (sun)
 			love.graphics.circle('line', self.location.x*ZOOM, self.location.y*ZOOM, (self.radius+UNIT_RADIUS*4)*ZOOM, SEGMENTS)
 		end
 		
-		if self.id == human.selectedPlanet.id then
-			love.graphics.setColor(200, 200, 200)
-		else
-			love.graphics.setColor(100, 100, 100)
-		end
+		love.graphics.setColor(200, 200, 200)
 		drawFilledCircle(self.location.x, self.location.y, self.radius)
 	end
 	
@@ -201,7 +201,7 @@ function newPlanet (sun)
 	function p:findEnemyAbroad (friendlyColony)
 		local enemies = {}
 		for _, planet in pairs(self.connections) do
-			appendToTable(enemies, planet:listEnemies())
+			appendToTable(enemies, planet:listEnemies(friendlyColony))
 		end
 		if enemies == {} then
 			return nil
@@ -258,6 +258,16 @@ function newPlanet (sun)
 		self.sporesOffPlanet = cleanSporeOffPlanetList
 		
 		self.shouldCleanupSpores = false
+	end
+	
+	function p:onScreen ()
+		local pos = self.location
+		local v = newVector(pos.x, pos.y)
+		v = vMul(v, ZOOM)
+		v = vAdd(v, OFFSET)
+		local w = love.graphics.getWidth()
+		local h = love.graphics.getHeight()
+		return v.x > w*.2 and v.x < w*.8 and v.y > h*.2 and v.y < h*.8
 	end
 	
 	return p

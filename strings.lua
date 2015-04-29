@@ -1,54 +1,44 @@
 strings = {
-	attack = 'attack',
-	spawn = 'spawn',
-	travel = 'travel',
+	prospora = 'Prospora',
 	
-	firstClickHome = "These are spores in your colony",
-	firstOneSporeLeft = "Increase your colony's spawn rate to generate more spores",
-	firstConnection = "Increase your colony's travel rate to get spores to spawn and attack across a connection",
-	firstGeneChange = "Now it's time to explore",
-	firstEnemyHomeInView = "You've discovered an enemy spore colony - Destroy all enemy home planets to win the game",
-	firstBattle = "Increase your colony's attack rate to defend and expand your territory",
-	startTutorial = "This is your home planet",
-	winTutorial = "Your colony was triumphant",
-	loseTutorial = "Alas, your colony was destroyed",
-	win = "A tiny universe, conquered",
-	lose = "You have been eradicated",
+	attack = 'Attack',
+	spawn = 'Spawn',
+	travel = 'Travel',
 	
-	universeSmall = 'universe size: small',
-	universeMedium = 'universe size: medium',
-	universeLarge = 'universe size: large',
+	thisIsHome = "This is your home planet.",
+	clickToSelect = "Click to select it.",
+	skipTutorial = "Skip tutorial",
 	
-	fullscreenOn = 'fullscreen: on',
-	fullscreenOff = 'fullscreen: off',
+	theseAreSpores = "These are spores in your colony.",
+	launchSpore = "Click and drag to launch a spore toward another planet.",
 	
-	soundsOn = 'audio: on',
-	soundsOff = 'audio: off',
+	needMoreSpores = "Increase your colony's spawn rate to generate more spores.",
+	increaseSpawn = "Drag the spawn bar to the right.",
 	
-	advancedControlsOn = 'advanced controls: on',
-	advancedControlsOff = 'advanced controls: off',
+	acrossConnections = "Increase your colony's travel rate to get spores\nto spawn and attack across a connection.",
+	increaseTravel = "Drag the travel bar to the right.",
 	
-	mainMenu = 'main menu',
+	timeToExplore = "Now it's time to explore!",
+	dragToMove = "Click and drag empty space to move your viewpoint.",
 	
-	newGame = 'new game',
+	timeToPause = "You can pause the game at any time.",
+	howToPause = "Press <ESC> to pause.",
 	
-	optionsHeader = 'options',
-	optionsHeader = 'options',
+	discoveredEnemyHome = "You've discovered an enemy spore colony!",
+	destroyEnemies = "Destroy all enemy home planets to win the game.",
 	
-	pauseHeader = 'paused',
-	resume = 'resume',
-	endGame = 'end this game',
+	underAttack = "Attack! Increase your colony's attack rate\nto defend and expand your territory.",
+	increaseAttack = "Drag the attack bar to the right.",
 	
-	loseHeader = 'lose',
-	loseMessage = 'you have been eradicated',
+	winTutorial = "Your colony was triumphant!",
+	loseTutorial = "Alas, your colony was destroyed.",
+	restartTutorial = "Restart tutorial",
+	startFullGame = "Start full game",
 	
-	winHeader = 'win',
-	winMessage = 'a tiny universe, conquered',
-
-	quit = 'quit',
-	music = 'music',
-
-	creditsHeader = 'credits',
+	win = "A tiny universe, conquered.",
+	lose = "You have been eradicated.",
 	
-	tutorialHeader = 'tutorial',
+	newGame = "New game",
+	newTutorial = "New Tutorial",
+	quit = "Quit"
 }

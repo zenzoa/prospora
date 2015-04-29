@@ -19,3 +19,8 @@ Game designed and coded by [Sarah Gould](http://www.zenzoa.com)
 - plink by nickgoa (public domain)
 - staple drop by djtiii (public domain)
 - bass metal thud by daphne in wonderland (public domain)
+
+**Fonts**
+
+- Furore by Jovanny Lemonad
+- Bender by Jovanny Lemonad

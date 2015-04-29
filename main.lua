@@ -1,10 +1,17 @@
---todo:
---finish messages/triggers/arrows/buttons
---make tutorial world
---saves!
---finish sounds/pitch variation
---reimplement red death frame/
---separate out strings
+--[[
+
+FIX:
+- attack-abroad spore not showing up
+- weird flickering when spawning locally
+
+TODO:
+- finish messages/triggers/arrows/buttons
+- saves!
+- finish sounds
+- reimplement red death frame/death ripple?
+- separate out strings
+
+]]--
 
 require("maths")
 require("vectors")
@@ -20,6 +27,7 @@ require("players")
 
 require("game")
 require("interface")
+require("tutorial")
 local shine = require("shine")
 
 FANCY_GRAPHICS = true
@@ -27,8 +35,9 @@ FPS = 60
 UNIT_RADIUS = 5
 SEGMENTS = 60
 FONT_SIZE = 20
-NEW_PLAYER = true
-soundOn = true
+TUTORIAL = true
+flags = {}
+soundOn = false -- default true
 
 function love.load()
 	
@@ -42,8 +51,11 @@ function love.load()
 	love.graphics.setPointStyle('rough')
 	
 	-- setup fonts
+	fontMessageSmall = love.graphics.newFont('assets/furore.otf', FONT_SIZE*.8)
+	fontMessage = love.graphics.newFont('assets/bender.otf', FONT_SIZE)
 	font = love.graphics.newFont('assets/furore.otf', FONT_SIZE)
 	fontLarge = love.graphics.newFont('assets/furore.otf', FONT_SIZE*2)
+	fontTitle = love.graphics.newFont('assets/furore.otf', FONT_SIZE*5)
 	love.graphics.setFont(font)
 	
 	-- setup audio
@@ -135,6 +147,13 @@ function adjustPos (x, y)
 	return v
 end
 
+function unAdjustPos (x, y)
+	local v = newVector(x, y)
+	v = vMul(v, ZOOM)
+	v = vAdd(v, OFFSET)
+	return v
+end
+
 function adjustOffset ()
 	OFFSET.x = math.min(0, math.max(-WORLD_SIZE.width * ZOOM + love.graphics.getWidth(), OFFSET.x))
 	OFFSET.y = math.min(0, math.max(-WORLD_SIZE.height * ZOOM + love.graphics.getHeight(), OFFSET.y))
@@ -144,4 +163,8 @@ function drawFilledCircle(x, y, r)
 	love.graphics.circle('fill', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)
 	love.graphics.setLineWidth(1)
 	love.graphics.circle('line', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)
+end
+
+function resetFlags ()
+	flags = {}
 end

@@ -7,19 +7,31 @@ function newGame ()
 	g.dragging = nil
 	
 	function g:load ()
-		UNIVERSE_SIZE = 10
-		
-		WORLD_SIZE = { width = 1200 + 120*UNIVERSE_SIZE, height = 1200 + 120*UNIVERSE_SIZE }
-		OFFSET = { x = WORLD_SIZE.width/2, y = WORLD_SIZE.height/2 }
 		TURN_TIME = 60.0
 		ZOOM = 1
-	
+		resetFlags()
 		human = newPlayer()
-	
-		-- setup the game world
-		initStars(UNIVERSE_SIZE * 400)
-		initSuns(UNIVERSE_SIZE)
-		initPlanets(UNIVERSE_SIZE * 3)
+		
+		if TUTORIAL then
+			self.interface:newTutorial()
+			
+			UNIVERSE_SIZE = 10
+			WORLD_SIZE = { width = 1200 + 120*UNIVERSE_SIZE, height = 1200 + 120*UNIVERSE_SIZE }
+			OFFSET = { x = WORLD_SIZE.width/2, y = WORLD_SIZE.height/2 }
+			
+			initStars(UNIVERSE_SIZE * 400)
+			initTutorialWorld()
+		else
+			self.interface:newGame()
+			
+			UNIVERSE_SIZE = 10
+			WORLD_SIZE = { width = 1200 + 120*UNIVERSE_SIZE, height = 1200 + 120*UNIVERSE_SIZE }
+			OFFSET = { x = WORLD_SIZE.width/2, y = WORLD_SIZE.height/2 }
+			
+			initStars(UNIVERSE_SIZE * 400)
+			initSuns(UNIVERSE_SIZE)
+			initPlanets(UNIVERSE_SIZE * 3)
+		end
 		
 		if not self.paused and soundOn then
 			gameMusic:rewind()
@@ -29,6 +41,7 @@ function newGame ()
 		end
 	
 		centerOnSelection()
+		human.selectedPlanet = nil
 	end
 	
 	function g:update ()
@@ -84,13 +97,14 @@ function newGame ()
 					human.selectedPlanet = planet
 					selectingPlanet = true
 					local friendsOnPlanet = planet:countFriends(human.colony)
-					if friendsOnPlanet > 1 then
+					if friendsOnPlanet > 1 and (not TUTORIAL or flags.allowLaunching) then
 						self.dragging = 'launch'
-					elseif self.interface.flags.firstOneSporeLeft == 0 and friendsOnPlanet == 1 then
-						self.interface.flags.firstOneSporeLeft = 1
 					end
-					if self.interface.flags.firstClickHome == 0 and planet == human.homeWorld then
-						self.interface.flags.firstClickHome = 1
+					if friendsOnPlanet == 1 then
+						flags.oneSporeLeft = true
+					end
+					if planet == human.homeWorld then
+						flags.selectHomeWorld = true
 					end
 					if soundOn then
 						selectSound:setPitch(1*randomRealBetween(.9, 1.1))
@@ -101,8 +115,8 @@ function newGame ()
 	
 			if not selectingPlanet then
 				-- check with interface elements
-			
 				self.dragging = 'screen'
+				flags.shiftView = true
 			end
 	
 			self.dragStartPoint = adjPos
@@ -114,7 +128,7 @@ function newGame ()
 		
 		local interfaceBusy = self.interface:mousereleased(x, y)
 		
-		if not interfaceBusy and self.dragging == 'launch' then
+		if not interfaceBusy and self.dragging == 'launch' and human.selectedPlanet then
 			local d = vMul(vSub(adjPos, human.selectedPlanet.location), ZOOM)
 			if vMag(d) > human.selectedPlanet.radius + UNIT_RADIUS*4 then
 				if human.selectedPlanet:countFriends(human.colony) > 1 then
@@ -137,6 +151,7 @@ function newGame ()
 			gameMusic:play()
 		else
 			gameMusic:pause()
+			flags.pause = true
 		end
 	end
 	
@@ -148,9 +163,9 @@ function newGame ()
 			end
 		end
 		if noEnemyHomeworlds then
-			self.interface.flags.win = 1
+			flags.win = true
 		elseif not human.homeWorld.isHomeWorld then
-			self.interface.flags.lose = 1
+			flags.lose = true
 		end
 	end
 	
@@ -158,33 +173,37 @@ function newGame ()
 end
 
 function centerOnSelection ()
-	OFFSET.x = (love.graphics.getWidth() / 2) - (human.selectedPlanet.location.x * ZOOM)
-	OFFSET.y = (love.graphics.getHeight() / 2) - (human.selectedPlanet.location.y * ZOOM)
+	if human.selectedPlanet then
+		OFFSET.x = (love.graphics.getWidth() / 2) - (human.selectedPlanet.location.x * ZOOM)
+		OFFSET.y = (love.graphics.getHeight() / 2) - (human.selectedPlanet.location.y * ZOOM)
+	end
 	adjustOffset()
 end
 
 function drawHalo (launchPos)
-	local haloRadius = 0
 	local p = human.selectedPlanet
-	local maxHalo = UNIT_RADIUS * 40
-	local minHalo = UNIT_RADIUS * 5
-	love.graphics.setColor(255, 255, 255)
+	if p then
+		local haloRadius = 0
+		local maxHalo = UNIT_RADIUS * 40
+		local minHalo = UNIT_RADIUS * 5
+		love.graphics.setColor(255, 255, 255)
 	
-	if launchPos then
-		love.graphics.setColor(0, 170, 250)
-		local d = vMul(vSub(launchPos, p.location), ZOOM)
-		local dMag = vMag(d)
-		haloRadius = math.max( math.min(dMag, p.radius + maxHalo), p.radius + minHalo)
-		if dMag > p.radius + minHalo then
-			d = vNormalize(d)
-			d = vMul(d, haloRadius)
-			d = vAdd(d, p.location)
-			drawFilledCircle(d.x, d.y, UNIT_RADIUS/ZOOM)
+		if launchPos then
+			love.graphics.setColor(0, 170, 250)
+			local d = vMul(vSub(launchPos, p.location), ZOOM)
+			local dMag = vMag(d)
+			haloRadius = math.max( math.min(dMag, p.radius + maxHalo), p.radius + minHalo)
+			if dMag > p.radius + minHalo then
+				d = vNormalize(d)
+				d = vMul(d, haloRadius)
+				d = vAdd(d, p.location)
+				drawFilledCircle(d.x, d.y, UNIT_RADIUS/ZOOM)
+			end
+		else
+			haloRadius = p.radius + minHalo
 		end
-	else
-		haloRadius = p.radius + minHalo
-	end
 	
-	love.graphics.setLineWidth(1.5)
-	love.graphics.circle('line', p.location.x * ZOOM, p.location.y * ZOOM, haloRadius * ZOOM, SEGMENTS*2)
+		love.graphics.setLineWidth(1.5)
+		love.graphics.circle('line', p.location.x * ZOOM, p.location.y * ZOOM, haloRadius * ZOOM, SEGMENTS*2)
+	end
 end

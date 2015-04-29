@@ -23,7 +23,7 @@ function newSpore (planet, colony, position)
 				local isTraveling = randomRealBetween(0, 1) < self.colony.travel
 				local isConnecting = isTraveling and self.colony ~= human.colony and self.planet:countFriends(self.colony) > 1 and randomRealBetween(0, 2) < self.colony.travel
 				local isAttacking = randomRealBetween(0, self.colony.attack + self.colony.spawn) < self.colony.attack
-				if isConnecting then
+				if isConnecting and (not TUTORIAL or flags.allowEnemyConnections) then
 					self:launchExplorer()
 				elseif isTraveling then
 					if isAttacking then
@@ -99,9 +99,7 @@ function newSpore (planet, colony, position)
 			if self.animationCounter <= 0 then
 				self.state = 'dead'
 				if self.colony == human.colony then
-					if game.interface.flags.firstBattle == 0 then
-						game.interface.flags.firstBattle = 1
-					end
+					flags.underAttack = true
 					if soundOn then
 						attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
 						attackedSound:play()
@@ -114,9 +112,7 @@ function newSpore (planet, colony, position)
 			if self.animationCounter <= 0 then
 				self.state = 'dead'
 				if self.colony == human.colony then
-					if game.interface.flags.firstBattle == 0 then
-						game.interface.flags.firstBattle = 1
-					end
+					flags.underAttack = true
 					if soundOn then
 						attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
 						attackedSound:play()
@@ -137,9 +133,7 @@ function newSpore (planet, colony, position)
 				table.insert(planetConnections, newConnection(self.planet, planet))
 				self.state = 'dead'
 				if self.colony == human.colony then
-					if game.interface.flags.firstConnection == 0 then
-						game.interface.flags.firstConnection = 1
-					end
+					flags.makeConnection = true
 					if soundOn then
 						hitPlanetSound:setPitch(1*randomRealBetween(.9, 1.1))
 						hitPlanetSound:play()
@@ -183,14 +177,14 @@ function newSpore (planet, colony, position)
 		elseif self.state == 'defendingLocally' then
 			local fade = 127*self.animationCounter
 			love.graphics.setColor(255,255,255,fade)
-			drawFilledCircle(self.location.x, self.location.y, radius*(2-self.animationCounter))
+			drawFilledCircle(self.location.x, self.location.y, radius*(3-self.animationCounter))
 			drawRegularUnit = false
 			
 		elseif self.state == 'defendingAbroad' then
 			if self.animationCounter <= 1 then
 				local fade = 127*self.animationCounter
 				love.graphics.setColor(255,255,255,fade)
-				drawFilledCircle(self.location.x, self.location.y, radius*(1-self.animationCounter))
+				drawFilledCircle(self.location.x, self.location.y, radius*(2-self.animationCounter))
 				drawRegularUnit = false
 			end
 			
@@ -229,6 +223,7 @@ function newSpore (planet, colony, position)
 			self.child.state = 'placeholder'
 			self.child.width = 0
 			self.planet:insertSpore(self.position, self.child)
+			self.child.location = self.planet:getSporeLocation(self.child)
 		end
 	end
 	
