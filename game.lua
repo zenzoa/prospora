@@ -1,12 +1,15 @@
 function newGame ()
 	local g = {}
 	
-	g.paused = false
 	g.interface = newInterface()
 	g.dragStartPoint = {x=0, y=0}
-	g.dragging = nil
 	
 	function g:load ()
+		self.paused = false
+		self.interface = newInterface()
+		self.dragStartPoint = {x=0, y=0}
+		self.dragging = nil
+		
 		TURN_TIME = 60.0
 		ZOOM = 1
 		resetFlags()
@@ -147,6 +150,13 @@ function newGame ()
 	
 	function g:togglePause ()
 		self.paused = not self.paused
+		
+		if self.paused then
+			self.interface:addMessage(self.interface.allMessages.paused)
+		elseif self.interface.messages[1] and self.interface.messages[1].flag == 'paused' then
+			self.interface.messages[1].fading = true
+		end
+		
 		if not self.paused and soundOn then
 			gameMusic:play()
 		else

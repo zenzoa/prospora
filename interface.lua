@@ -27,8 +27,10 @@ function newInterface ()
 	i.titleOpacity = .8
 	
 	function i:update ()
-		if self.titleOpacity > 0 then
+		if SHOW_LOGO and self.titleOpacity > 0 then
 			self.titleOpacity = self.titleOpacity - 0.003
+		elseif self.titleOpacity <= 0 then
+			SHOW_LOGO = false
 		end
 
 		for _, s in pairs(self.sliders) do
@@ -53,11 +55,13 @@ function newInterface ()
 			m:draw()
 		end
 		
-		love.graphics.setColor(0,0,0, 255*self.titleOpacity)
-		love.graphics.rectangle('fill', 0,0, love.graphics.getWidth(), love.graphics.getHeight())
-		love.graphics.setColor(255, 255, 255, 255*self.titleOpacity)
-		love.graphics.setFont(fontTitle)
-		love.graphics.printf(strings.prospora, 0, love.graphics.getHeight()/2-FONT_SIZE*4, love.graphics.getWidth(), 'center')
+		if SHOW_LOGO then
+			love.graphics.setColor(0,0,0, 255*self.titleOpacity)
+			love.graphics.rectangle('fill', 0,0, love.graphics.getWidth(), love.graphics.getHeight())
+			love.graphics.setColor(255, 255, 255, 255*self.titleOpacity)
+			love.graphics.setFont(fontTitle)
+			love.graphics.printf(strings.prospora, 0, love.graphics.getHeight()/2-FONT_SIZE*4, love.graphics.getWidth(), 'center')
+		end
 	end
 	
 	function i:mousepressed (x, y)
@@ -92,19 +96,72 @@ function newInterface ()
 			m.fading = true
 			if m.hotspot then m.hotspot.fading = true end
 		end
+		newMessage.fading = false
+		newMessage.opacity = 1
 		table.insert(self.messages, 1, newMessage)
 	end
 	
 	function i:newGame ()
 		self.messages = {}
+		self.allMessages = self:createMessages()
 	end
 	
 	function i:newTutorial ()
-		
 		self.messages = {}
 		self.allMessages = createTutorialMessages()
 		self:addMessage(self.allMessages.selectHomeWorld)
+	end
+	
+	function i:createMessages()
+		local m = {}
 		
+		--
+		
+		m.paused = newMessage('paused', strings.paused)
+		
+		local returnToGameButton = function (self)
+				game:togglePause()
+			end
+		m.paused:addButton('> ' .. strings.returnToGame, returnToGameButton)
+		
+		local soundToggleButton = function (self)
+				if soundOn then
+					soundOn = false
+					self.text = '> ' .. strings.soundOn
+				else
+					soundOn = true
+					self.text = '> ' .. strings.soundOff
+				end
+			end
+		m.paused:addButton('> ' .. strings.soundOff, soundToggleButton)
+		
+		local creditsButton = function (self)
+				-- show credits screen
+			end
+		m.paused:addButton('> ' .. strings.credits, creditsButton)
+		
+		m.paused:addButton('')
+		
+		local newGameButton = function (self)
+				TUTORIAL = false
+				game:load()
+			end
+		m.paused:addButton('> ' .. strings.newGame, newGameButton)
+		
+		local newTutorialButton = function (self)
+				TUTORIAL = true
+				game:load()
+			end
+		m.paused:addButton('> ' .. strings.newTutorial, newTutorialButton)
+		
+		local newQuitButton = function (self)
+				love.event.quit()
+			end
+		m.paused:addButton('> ' .. strings.quit, newQuitButton)
+		
+		--
+		
+		return m
 	end
 	
 	function i:checkFlags()
@@ -170,7 +227,6 @@ function newMessage (flag, text)
 	m.flag = flag
 	
 	m.pressed = false
-	m.pauseGame = false
 	
 	m.text = text
 	m.buttons = {}
@@ -213,7 +269,7 @@ function newMessage (flag, text)
 		y = y + self.lineHeight*self:countLines()
 		for _, b in pairs(self.buttons) do
 			love.graphics.setFont(fontMessageSmall)
-			if b.func and love.mouse.getY() > y and love.mouse.getY() < y + FONT_SIZE then
+			if b.func and not self.fading and love.mouse.getY() > y and love.mouse.getY() < y + FONT_SIZE then
 				love.graphics.setColor(0, 170, 250, 255*self.opacity)
 			else
 				love.graphics.setColor(255,255,255, 255*self.opacity)

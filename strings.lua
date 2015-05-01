@@ -38,6 +38,12 @@ strings = {
 	win = "A tiny universe, conquered.",
 	lose = "You have been eradicated.",
 	
+	paused = "Game paused.",
+	returnToGame = "Return to game",
+	soundOn = "Turn sound on",
+	soundOff = "Turn sound off",
+	credits = "Credits",
+	
 	newGame = "New game",
 	newTutorial = "New Tutorial",
 	quit = "Quit"

@@ -36,8 +36,9 @@ UNIT_RADIUS = 5
 SEGMENTS = 60
 FONT_SIZE = 20
 TUTORIAL = true
+SHOW_LOGO = true
 flags = {}
-soundOn = false -- default true
+soundOn = true
 
 function love.load()
 	

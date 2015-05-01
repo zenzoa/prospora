@@ -78,7 +78,7 @@ function initTutorialWorld ()
 end
 
 function createTutorialMessages()
-	local m = {}
+	local m = game.interface:createMessages()
 	
 	--
 	
