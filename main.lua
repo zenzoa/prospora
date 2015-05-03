@@ -1,15 +1,14 @@
 --[[
 
 FIX:
-- attack-abroad spore not showing up
-- weird flickering when spawning locally
+- attack-abroad spore not showing up?
+- weird flickering when spawning locally?
 
 TODO:
-- finish messages/triggers/arrows/buttons
+- win/lose messages
 - saves!
 - finish sounds
 - reimplement red death frame/death ripple?
-- separate out strings
 
 ]]--
 
@@ -52,6 +51,7 @@ function love.load()
 	love.graphics.setPointStyle('rough')
 	
 	-- setup fonts
+	fontMessageSmallest = love.graphics.newFont('assets/furore.otf', FONT_SIZE*.6)
 	fontMessageSmall = love.graphics.newFont('assets/furore.otf', FONT_SIZE*.8)
 	fontMessage = love.graphics.newFont('assets/bender.otf', FONT_SIZE)
 	font = love.graphics.newFont('assets/furore.otf', FONT_SIZE)

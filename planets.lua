@@ -93,10 +93,13 @@ function newPlanet (sun)
 		self.location = vAdd(self.location, self.sun.location)
 		
 		local sporeWidthSum = 0
+		local sporesOnHomeworld = 0
 		for _, spore in pairs(self.spores) do
 			spore:update()
+			if self.isHomeWorld and spore.colony == self.startingColony then sporesOnHomeworld = sporesOnHomeworld + 1 end
 			sporeWidthSum = sporeWidthSum + spore.width
 		end
+		if self.isHomeWorld and sporesOnHomeworld == 0 then self.isHomeWorld = false end
 		self.sporeWidthAngle = TAU / sporeWidthSum
 
 		for _, spore in pairs(self.sporesOffPlanet) do

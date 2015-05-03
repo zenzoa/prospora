@@ -92,12 +92,18 @@ function newInterface ()
 	end
 	
 	function i:addMessage(newMessage)
-		for _, m in pairs(self.messages) do
-			m.fading = true
-			if m.hotspot then m.hotspot.fading = true end
+		for i, m in pairs(self.messages) do
+			if m == newMessage then
+				table.remove(self.messages, i)
+			else
+				m.fading = true
+			end
 		end
 		newMessage.fading = false
 		newMessage.opacity = 1
+		if newMessage.hotspot then
+			newMessage.hotspot.opacity = 1
+		end
 		table.insert(self.messages, 1, newMessage)
 	end
 	
@@ -140,24 +146,22 @@ function newInterface ()
 			end
 		m.paused:addButton('> ' .. strings.credits, creditsButton)
 		
-		m.paused:addButton('')
-		
 		local newGameButton = function (self)
 				TUTORIAL = false
 				game:load()
 			end
-		m.paused:addButton('> ' .. strings.newGame, newGameButton)
+		m.paused:addButton('< ' .. strings.newGame .. ' >', newGameButton, 'left')
 		
 		local newTutorialButton = function (self)
 				TUTORIAL = true
 				game:load()
 			end
-		m.paused:addButton('> ' .. strings.newTutorial, newTutorialButton)
+		m.paused:addButton('< ' .. strings.newTutorial .. ' >', newTutorialButton, 'center')
 		
 		local newQuitButton = function (self)
 				love.event.quit()
 			end
-		m.paused:addButton('> ' .. strings.quit, newQuitButton)
+		m.paused:addButton('< ' .. strings.quit .. ' >', newQuitButton, 'right')
 		
 		--
 		
@@ -194,6 +198,11 @@ function newInterface ()
 								if flags.increaseAttack then
 									if self.messages[1] and self.messages[1].flag == 'increaseAttack' then
 										self:addMessage(self.allMessages.pause)
+									end
+									if flags.pause then
+										if self.messages[1] and self.messages[1].flag == 'pause' then
+											self.messages[1].fading = true
+										end
 									end
 								end
 							end
@@ -239,7 +248,10 @@ function newMessage (flag, text)
 	m.lineHeight = FONT_SIZE*2
 	
 	function m:update ()
-		if self.hotspot then self.hotspot:update() end
+		if self.hotspot then
+			self.hotspot.fading = self.fading
+			self.hotspot:update()
+		end
 		
 		self:updatePosition()
 		if self.fading then
@@ -268,25 +280,49 @@ function newMessage (flag, text)
 		
 		y = y + self.lineHeight*self:countLines()
 		for _, b in pairs(self.buttons) do
-			love.graphics.setFont(fontMessageSmall)
-			if b.func and not self.fading and love.mouse.getY() > y and love.mouse.getY() < y + FONT_SIZE then
+			if b.align then
+				love.graphics.setFont(fontMessageSmallest)
+			else
+				love.graphics.setFont(fontMessageSmall)
+			end
+			
+			local hover = b.func and not self.fading and love.mouse.getY() > y and love.mouse.getY() < y + FONT_SIZE
+			if hover and b.align then
+				hover = false
+				if b.align == 'left' then
+					hover = love.mouse.getX() < love.graphics.getWidth()*.33
+				elseif b.align == 'center' then
+					hover = love.mouse.getX() > love.graphics.getWidth()*.33 and love.mouse.getX() < love.graphics.getWidth()*.66
+				elseif b.align == 'right' then
+					hover = love.mouse.getX() > love.graphics.getWidth()*.66
+				end
+			end
+			if hover then
 				love.graphics.setColor(0, 170, 250, 255*self.opacity)
 			else
 				love.graphics.setColor(255,255,255, 255*self.opacity)
 			end
-			love.graphics.printf(b.text, 100, y, love.graphics.getWidth()-200, 'left')
-			y = y + self.lineHeight
+			
+			love.graphics.printf(b.text, 100, y, love.graphics.getWidth()-200, b.align)
+			if not b.align then y = y + self.lineHeight end
 		end
 	end
 	
 	function m:updatePosition ()
-		local numButtons = tableSize(self.buttons)
+		local numButtons = 0
+		for _, b in pairs(self.buttons) do
+			if not b.align then
+				numButtons = numButtons + 1
+			elseif b.align == 'right' then
+				numButtons = numButtons + 0.5
+			end
+		end
 		self.menuHeight = (numButtons+self:countLines()+1) * self.lineHeight
 		self.menuY = love.graphics.getHeight() - self.menuHeight
 	end
 	
-	function m:addButton (text, func)
-		table.insert(self.buttons, {text=text, func=func})
+	function m:addButton (text, func, align)
+		table.insert(self.buttons, {text=text, func=func, align=align})
 	end
 	
 	function m:press (x, y)
@@ -296,24 +332,43 @@ function newMessage (flag, text)
 
 		local buttonY = self.menuY + self.lineHeight/2 + self.lineHeight*self:countLines()
 		for _, b in pairs(self.buttons) do
-			if y > buttonY and y < buttonY + FONT_SIZE then
-				b.pressed = true
-				if soundOn then
-					buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
-					buttonSound:play()
+			b.pressed = b.func and not self.fading and y > buttonY and y < buttonY + FONT_SIZE
+			if b.pressed and b.align then
+				b.pressed = false
+				if b.align == 'left' then
+					b.pressed = x < love.graphics.getWidth()*.33
+				elseif b.align == 'center' then
+					b.pressed = x > love.graphics.getWidth()*.33 and x < love.graphics.getWidth()*.66
+				elseif b.align == 'right' then
+					b.pressed = x > love.graphics.getWidth()*.66
 				end
 			end
-			buttonY = buttonY + self.lineHeight
+			if b.pressed and soundOn then
+				buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
+				buttonSound:play()
+			end
+			if not b.align then buttonY = buttonY + self.lineHeight end
 		end
 	end
 	
 	function m:release (x, y)
 		local buttonY = self.menuY + self.lineHeight/2 + self.lineHeight*self:countLines()
 		for _, b in pairs(self.buttons) do
-			if b.pressed and b.func and y > buttonY and y < buttonY + FONT_SIZE then
+			local hover = b.func and not self.fading and y > buttonY and y < buttonY + FONT_SIZE
+			if hover and b.align then
+				hover = false
+				if b.align == 'left' then
+					hover = x < love.graphics.getWidth()*.33
+				elseif b.align == 'center' then
+					hover = x > love.graphics.getWidth()*.33 and x < love.graphics.getWidth()*.66
+				elseif b.align == 'right' then
+					hover = x > love.graphics.getWidth()*.66
+				end
+			end
+			if b.pressed and hover then
 				b:func()
 			end
-			buttonY = buttonY + self.lineHeight
+			if not b.align then buttonY = buttonY + self.lineHeight end
 		end
 		
 		if self.hotspot and self.hotspot.pressed then self.hotspot:release(x,y) end

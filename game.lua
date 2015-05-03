@@ -152,9 +152,17 @@ function newGame ()
 		self.paused = not self.paused
 		
 		if self.paused then
+			if self.interface.messages[1] then
+				self.interface.allMessages.paused.lastMessage = self.interface.messages[1]
+			end
 			self.interface:addMessage(self.interface.allMessages.paused)
 		elseif self.interface.messages[1] and self.interface.messages[1].flag == 'paused' then
-			self.interface.messages[1].fading = true
+			if self.interface.allMessages.paused.lastMessage then
+				self.interface:addMessage(self.interface.allMessages.paused.lastMessage)
+				self.interface.allMessages.paused.lastMessage = nil
+			else
+				self.interface.messages[1].fading = true
+			end
 		end
 		
 		if not self.paused and soundOn then

@@ -39,86 +39,22 @@ function newSpore (planet, colony, position)
 			end
 			
 		elseif self.state == 'spawningLocally' then
-			self:updateAnimationCounter()
-			self.child.width = 1 - self.animationCounter
-			self.child.location = self.planet:getSporeLocation(self.child)
-			if self.animationCounter <= 0 then
-				self.child.state = 'ready'
-				self.child.width = 1
-				self.state = 'ready'
-				self.width = 1
-			end
+			self:spawnLocallyUpdate()
 			
 		elseif self.state == 'spawningAbroad' then
-			self:updateAnimationCounter()
-			if self.animationCounter > 1.5 then
-			elseif self.animationCounter > 0 then
-				self.child.width = (1.5 - self.animationCounter)/1.5
-				local d = vSub(self.child.planet.location, self.planet.location)
-				local totalDistance = vMag(d)
-				d = vNormalize(d)
-				self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
-				self.child.location = vAdd(self.child.location, self.planet.location)
-			else
-				self.child.state = 'ready'
-				self.child.width = 1
-				self.state = 'ready'
-			end
+			self:spawnAbroadUpdate()
 			
 		elseif self.state == 'attackingLocally' then
-			self:updateAnimationCounter()
-			self.rotationAngle = TAU*self.animationCounter
-			if self.animationCounter <= 0 then
-				self.width = 1
-				self.state = 'ready'
-				self.rotationAngle = 0
-			end
+			self:attackLocallyUpdate()
 			
 		elseif self.state == 'attackingAbroad' then
-			self:updateAnimationCounter()
-			if self.animationCounter > 1 then
-				self.width = self.animationCounter-1
-			end
-
-			if self.animationCounter > 0.5 then
-				local d = vSub(self.child.planet.location, self.planet.location)
-				local totalDistance = vMag(d)
-				d = vNormalize(d)
-				self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
-				self.child.location = vAdd(self.child.location, self.planet.location)
-			elseif self.animationCounter <= 0.5 and self.animationCounter > 0 then
-				self.child.state = 'ready'
-				self.child.width = 1
-			elseif self.animationCounter <= 0 then
-				self.state = 'dead'
-			end
+			self:attackAbroadUpdate()
 			
 		elseif self.state == 'defendingLocally' then
-			self:updateAnimationCounter()
-			self.width = self.animationCounter
-			if self.animationCounter <= 0 then
-				self.state = 'dead'
-				if self.colony == human.colony then
-					flags.underAttack = true
-					if soundOn then
-						attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
-						attackedSound:play()
-					end
-				end
-			end
+			self:defendLocallyUpdate()
 			
 		elseif self.state == 'defendingAbroad' then
-			self:updateAnimationCounter()
-			if self.animationCounter <= 0 then
-				self.state = 'dead'
-				if self.colony == human.colony then
-					flags.underAttack = true
-					if soundOn then
-						attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
-						attackedSound:play()
-					end
-				end
-			end
+			self:defendAbroadUpdate()
 			
 		elseif self.state == 'exploring' then
 			self:updateAnimationCounter()
@@ -152,41 +88,26 @@ function newSpore (planet, colony, position)
 		local radius = UNIT_RADIUS
 		local drawRegularUnit = true
 		
-		--love.graphics.print(self.position, (self.location.x-UNIT_RADIUS*6)*ZOOM, (self.location.y-UNIT_RADIUS*2)*ZOOM)
-		
 		if self.state == 'ready' then
 		elseif self.state == 'spawningLocally' then
-			drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS)
+			self:spawnLocallyDraw()
 			
 		elseif self.state == 'spawningAbroad' then
-			if self.animationCounter > 1.5 then
-				drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS*(3-self.animationCounter))
-			elseif self.animationCounter > 0 then
-				drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
-			end
+			self:spawnAbroadDraw()
 			
 		elseif self.state == 'attackingLocally' then
-			--
+			self:attackLocallyDraw()
 			
 		elseif self.state == 'attackingAbroad' then
 			drawRegularUnit = false
-			if self.animationCounter > 0.5 then
-				drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
-			end
+			self:attackAbroadDraw()
 			
 		elseif self.state == 'defendingLocally' then
-			local fade = 127*self.animationCounter
-			love.graphics.setColor(255,255,255,fade)
-			drawFilledCircle(self.location.x, self.location.y, radius*(3-self.animationCounter))
 			drawRegularUnit = false
+			self:defendLocallyDraw()
 			
 		elseif self.state == 'defendingAbroad' then
-			if self.animationCounter <= 1 then
-				local fade = 127*self.animationCounter
-				love.graphics.setColor(255,255,255,fade)
-				drawFilledCircle(self.location.x, self.location.y, radius*(2-self.animationCounter))
-				drawRegularUnit = false
-			end
+			drawRegularUnit = self:defendAbroadDraw()
 			
 		elseif self.state == 'exploring' then
 			radius = radius/2
@@ -215,9 +136,11 @@ function newSpore (planet, colony, position)
 		self.animationCounter = 1
 	end
 	
+	--
+	
 	function s:spawnLocally ()
 		if self.planet:isRoomAvailable() then
-			self.state = 'spawningLocally'
+			self.state = 'spawnLocally'
 			self.animationCounter = 1
 			self.child = newSpore(self.planet, self.colony)
 			self.child.state = 'placeholder'
@@ -226,9 +149,25 @@ function newSpore (planet, colony, position)
 			self.child.location = self.planet:getSporeLocation(self.child)
 		end
 	end
+	function s:spawnLocallyUpdate ()
+		self:updateAnimationCounter()
+		self.child.width = 1 - self.animationCounter
+		self.child.location = self.planet:getSporeLocation(self.child)
+		if self.animationCounter <= 0 then
+			self.child.state = 'ready'
+			self.child.width = 1
+			self.state = 'ready'
+			self.width = 1
+		end
+	end
+	function s:spawnLocallyDraw ()
+		drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS)
+	end
+	
+	--
 	
 	function s:spawnAbroad ()
-		targetPlanet = self.planet:connectionWithRoom()
+		local targetPlanet = self.planet:connectionWithRoom()
 		if targetPlanet then
 			self.state = 'spawningAbroad'
 			self.animationCounter = 2
@@ -238,6 +177,31 @@ function newSpore (planet, colony, position)
 			targetPlanet:insertSpore(1, self.child)
 		end
 	end
+	function s:spawnAbroadUpdate ()
+		self:updateAnimationCounter()
+		if self.animationCounter > 1.5 then
+		elseif self.animationCounter > 0 then
+			self.child.width = (1.5 - self.animationCounter)/1.5
+			local d = vSub(self.child.planet.location, self.planet.location)
+			local totalDistance = vMag(d)
+			d = vNormalize(d)
+			self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
+			self.child.location = vAdd(self.child.location, self.planet.location)
+		else
+			self.child.state = 'ready'
+			self.child.width = 1
+			self.state = 'ready'
+		end
+	end
+	function s:spawnAbroadDraw ()
+		if self.animationCounter > 1.5 then
+			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS*(3-self.animationCounter))
+		elseif self.animationCounter > 0 then
+			drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
+		end
+	end
+	
+	--
 	
 	function s:attackLocally ()
 		self.target = self.planet:findEnemyLocally(self.colony)
@@ -248,9 +212,23 @@ function newSpore (planet, colony, position)
 			self.target.animationCounter = 1
 		end
 	end
+	function s:attackLocallyUpdate ()
+		self:updateAnimationCounter()
+		self.rotationAngle = TAU*self.animationCounter
+		if self.animationCounter <= 0 then
+			self.width = 1
+			self.state = 'ready'
+			self.rotationAngle = 0
+		end
+	end
+	function s:attackLocallyDraw ()
+		--
+	end
+	
+	--
 	
 	function s:attackAbroad ()
-		targetSpore = self.planet:findEnemyAbroad(self.colony)
+		local targetSpore = self.planet:findEnemyAbroad(self.colony)
 		if targetSpore then
 			self.state = 'attackingAbroad'
 			self.animationCounter = 2
@@ -262,6 +240,78 @@ function newSpore (planet, colony, position)
 			targetSpore.planet:insertSpore(targetSpore.position, self.child)
 		end
 	end
+	function s:attackAbroadUpdate ()
+		self:updateAnimationCounter()
+		if self.animationCounter > 1 then
+			self.width = self.animationCounter-1
+		end
+		if self.animationCounter > 0.5 then
+			local d = vSub(self.child.planet.location, self.planet.location)
+			local totalDistance = vMag(d)
+			d = vNormalize(d)
+			self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
+			self.child.location = vAdd(self.child.location, self.planet.location)
+		elseif self.animationCounter <= 0.5 and self.animationCounter > 0 then
+			self.child.state = 'ready'
+			self.child.width = 1
+		elseif self.animationCounter <= 0 then
+			self.state = 'dead'
+		end
+	end
+	function s:attackAbroadDraw ()
+		if self.animationCounter > 0.5 then
+			drawFilledCircle(self.child.location.x, self.child.location.y, UNIT_RADIUS/2)
+		end
+	end
+	
+	--
+	
+	function s:defendLocallyUpdate ()
+		self:updateAnimationCounter()
+		self.width = self.animationCounter
+		if self.animationCounter <= 0 then
+			self.state = 'dead'
+			if self.colony == human.colony then
+				flags.underAttack = true
+				if soundOn then
+					attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
+					attackedSound:play()
+				end
+			end
+		end
+	end
+	function s:defendLocallyDraw ()
+		local fade = 127*self.animationCounter
+		love.graphics.setColor(255,255,255,fade)
+		drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS*(3-self.animationCounter))
+	end
+	
+	--
+	
+	function s:defendAbroadUpdate ()
+		self:updateAnimationCounter()
+		if self.animationCounter <= 0 then
+			self.state = 'dead'
+			if self.colony == human.colony then
+				flags.underAttack = true
+				if soundOn then
+					attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
+					attackedSound:play()
+				end
+			end
+		end
+	end
+	function s:defendAbroadDraw ()
+		if self.animationCounter <= 1 then
+			local fade = 127*self.animationCounter
+			love.graphics.setColor(255,255,255,fade)
+			drawFilledCircle(self.location.x, self.location.y, UNIT_RADIUS*(2-self.animationCounter))
+			return false
+		end
+		return true
+	end
+	
+	--
 	
 	function s:pickRandomPlanet ()
 		local weightedPlanets = {}
