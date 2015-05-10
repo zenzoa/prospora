@@ -1,14 +1,11 @@
 --[[
 
 FIX:
-- attack-abroad spore not showing up?
 - weird flickering when spawning locally?
 
 TODO:
-- win/lose messages
-- saves!
-- finish sounds
-- reimplement red death frame/death ripple?
+- keyboard navigation
+- credits
 
 ]]--
 
@@ -23,25 +20,26 @@ require("spores")
 require("connections")
 require("planets")
 require("players")
+require("deathRipples")
 
 require("game")
 require("interface")
 require("tutorial")
 local shine = require("shine")
+require("dumper/dumper")
 
 FANCY_GRAPHICS = true
 FPS = 60
 UNIT_RADIUS = 5
 SEGMENTS = 60
 FONT_SIZE = 20
-TUTORIAL = true
-SHOW_LOGO = true
-flags = {}
-soundOn = true
+TITLE_OPACITY = .8
 
 function love.load()
 	
 	math.randomseed( os.time() )
+	love.filesystem.setIdentity('prospora')
+	love.keyboard.setKeyRepeat(true)
 	
 	-- setup window
 	love.window.setTitle("Prospora")
@@ -62,9 +60,9 @@ function love.load()
 	-- setup audio
 	gameMusic = love.audio.newSource('assets/alg0rh1tm-circuit.mp3', 'stream')
 	gameMusic:setLooping(true)
-	winMusic = love.audio.newSource('assets/alg0rh1tm-unit731.mp3', 'stream')
+	winMusic = love.audio.newSource('assets/broke_for_free-covered_in_oil.mp3', 'stream')
 	winMusic:setLooping(true)
-	loseSound = love.audio.newSource('assets/ani-music-wicked-bass-drop.wav', 'static')
+	loseSound = love.audio.newSource('assets/generdyn-brams01.wav', 'static')
 	launchSound = love.audio.newSource('assets/fins-laser.wav', 'static')
 	selectSound = love.audio.newSource('assets/nickgoa-plink.wav', 'static')
 	selectSound:setVolume(0.5)
@@ -72,14 +70,18 @@ function love.load()
 	buttonSound:setVolume(0.1)
 	hitPlanetSound = love.audio.newSource('assets/reitanna-drop-metal-thing.wav', 'static')
 	hitPlanetSound:setVolume(0.5)
-	attackedSound = love.audio.newSource('assets/daphne-in-wonderland-bass-metal-thud.wav', 'static')
+	attackedSound = love.audio.newSource('assets/reitanna-defeated-sigh.wav', 'static')
+	spawnSound = love.audio.newSource('assets/fins-creature.wav', 'static')
+	homeWorldLossSound = love.audio.newSource('assets/generdyn-hits10.wav', 'static')
 	
 	-- setup cool vignette effect
 	post_effect = setupFancyGraphics()
 	
-	-- setup new game
-	game = newGame()
-	game:load()
+	-- load previous game or setup new game
+	if not pcall(loadGame) then	
+		game = newGame(true)
+		game:load()
+	end
 end
 
 timeSinceLastUpdate = 0
@@ -88,12 +90,24 @@ function love.update(dt)
 	timeSinceLastUpdate = timeSinceLastUpdate + dt
 	if (timeSinceLastUpdate >= 1/FPS) then
 		game:update()
+		
+		if TITLE_OPACITY > 0 then
+			TITLE_OPACITY = TITLE_OPACITY - 0.003
+		end
+		
 		timeSinceLastUpdate = timeSinceLastUpdate - (1/FPS)
 	end
 end
 
 function love.draw()
 	game:draw()
+	if TITLE_OPACITY > 0 then
+		love.graphics.setColor(0,0,0, 255*TITLE_OPACITY)
+		love.graphics.rectangle('fill', 0,0, love.graphics.getWidth(), love.graphics.getHeight())
+		love.graphics.setColor(255, 255, 255, 255*TITLE_OPACITY)
+		love.graphics.setFont(fontTitle)
+		love.graphics.printf(strings.prospora, 0, love.graphics.getHeight()/2-FONT_SIZE*4, love.graphics.getWidth(), 'center')
+	end
 end
 
 function love.mousepressed(x, y, button)
@@ -105,31 +119,141 @@ function love.mousereleased(x, y, button)
 end
 
 function love.keypressed(k)
-	if k == 'escape' then
-		game:togglePause()
-	end
-	
-	if k == 'q' then
-		FANCY_GRAPHICS = not FANCY_GRAPHICS
-		if FANCY_GRAPHICS then
-			post_effect = setupFancyGraphics()
+	if k == 'left' then
+		if love.keyboard.isDown('shift') then
+		elseif game.paused then
 		else
-			post_effect = function(f) f() end
+			game.offset.x = game.offset.x + 20
+			adjustOffset()
 		end
-	end
-	
-	if k == 'f' then
-		local isFullscreen = not love.window.getFullscreen()
-		love.window.setFullscreen(isFullscreen)
-		if FANCY_GRAPHICS then post_effect = setupFancyGraphics() end
-	end
-	
-	if k == ' ' then
+		
+	elseif k == 'right' then
+		if love.keyboard.isDown('shift') then
+		elseif game.paused then
+		else
+			game.offset.x = game.offset.x - 20
+			adjustOffset()
+		end
+		
+	elseif k == 'up' then
+		if love.keyboard.isDown('shift') then
+		elseif game.paused then
+		else
+			game.offset.y = game.offset.y + 20
+			adjustOffset()
+		end
+		
+	elseif k == 'down' then
+		if love.keyboard.isDown('shift') then
+		elseif game.paused then
+		else
+			game.offset.y = game.offset.y - 20
+			adjustOffset()
+		end
+		
+	elseif k == 'escape' then
+		game:togglePause()
+		
+	elseif k == 'q' then
+		game.human.colony.attack = game.human.colony.attack * 0.8
+		game.human.colony:adjustGenes()
+		
+	elseif k == 'w' then
+		game.human.colony.attack = game.human.colony.attack * 1.25
+		game.human.colony:adjustGenes()
+		game.flags.increaseAttack = true
+		
+	elseif k == 'a' then
+		game.human.colony.spawn = game.human.colony.spawn * 0.8
+		game.human.colony:adjustGenes()
+		
+	elseif k == 's' then
+		game.human.colony.spawn = game.human.colony.spawn * 1.25
+		game.human.colony:adjustGenes()
+		game.flags.increaseSpawn = true
+		
+	elseif k == 'z' then
+		game.human.colony.travel = game.human.colony.travel * 0.8
+		game.human.colony:adjustGenes()
+		
+	elseif k == 'x' then
+		game.human.colony.travel = game.human.colony.travel * 1.25
+		game.human.colony:adjustGenes()
+		game.flags.increaseTravel = true
+		
+	elseif k == 'tab' then
+		local firstPlanet = nil
+		local chooseNextPlanet = false
+		local chosenPlanet = nil
+		for i, planet in pairs(planets) do
+			local friends = planet:countFriends(game.human.colony)
+			if friends > 0 then
+				if not firstPlanet then firstPlanet = planet end
+				if planet == game.human.selectedPlanet then
+					chooseNextPlanet = true
+				elseif chooseNextPlanet then
+					chosenPlanet = planet
+					chooseNextPlanet = false
+				end
+			end
+		end
+		if not chosenPlanet and firstPlanet then
+			chosenPlanet = firstPlanet
+		end
+		if chosenPlanet == game.human.homeWorld then
+			game.flags.selectHomeWorld = true
+		end
+		game.human.selectedPlanet = chosenPlanet
 		centerOnSelection()
+		
+	elseif k == ' ' then
+		centerOnSelection()
+	end
+	
+	
+	-- if paused, arrows select prev/next button
+		-- also if paused, ENTER or SPACE activate selected button
+	
+	-- to launch from keyboard: shift to show target circle,
+	-- arrows while holding shift to aim,
+	-- ENTER or SPACE to launch
+	
+end
+
+function love.quit ()
+	if game.tutorial or game.flags.win or game.flags.lose then
+		love.filesystem.remove('savegame')
+	else
+		saveGame()
 	end
 end
 
-function setupFancyGraphics()
+function saveGame ()
+	game.stars = stars
+	game.suns = suns
+	game.planets = planets
+	game.planetConnections = planetConnections
+	love.filesystem.write('savegame', DataDumper(game))
+end
+
+function loadGame ()
+	local f = love.filesystem.read('savegame')
+	local fun = loadstring(f)
+	game = fun()
+	stars = game.stars
+	suns = game.suns
+	planets = game.planets
+	planetConnections = game.planetConnections
+	toggleFullscreen(true)
+end
+
+function toggleFullscreen (doNotToggle)
+	if not doNotToggle then game.isFullscreen = not game.isFullscreen end
+	love.window.setFullscreen(game.isFullscreen)
+	if FANCY_GRAPHICS then post_effect = setupFancyGraphics() end
+end
+
+function setupFancyGraphics ()
 	love.graphics.setBackgroundColor(0,0,0)
 	love.graphics.setColor(255,255,255)
 	local vignette = shine.vignette()
@@ -143,29 +267,25 @@ end
 
 function adjustPos (x, y)
 	local v = newVector(x, y)
-	v = vSub(v, OFFSET)
-	v = vDiv(v, ZOOM)
+	v = vSub(v, game.offset)
+	v = vDiv(v, game.zoom)
 	return v
 end
 
 function unAdjustPos (x, y)
 	local v = newVector(x, y)
-	v = vMul(v, ZOOM)
-	v = vAdd(v, OFFSET)
+	v = vMul(v, game.zoom)
+	v = vAdd(v, game.offset)
 	return v
 end
 
 function adjustOffset ()
-	OFFSET.x = math.min(0, math.max(-WORLD_SIZE.width * ZOOM + love.graphics.getWidth(), OFFSET.x))
-	OFFSET.y = math.min(0, math.max(-WORLD_SIZE.height * ZOOM + love.graphics.getHeight(), OFFSET.y))
+	game.offset.x = math.min(0, math.max(-game.world_size.width * game.zoom + love.graphics.getWidth(), game.offset.x))
+	game.offset.y = math.min(0, math.max(-game.world_size.height * game.zoom + love.graphics.getHeight(), game.offset.y))
 end
 
 function drawFilledCircle(x, y, r)
-	love.graphics.circle('fill', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)
+	love.graphics.circle('fill', x*game.zoom, y*game.zoom, r*game.zoom-.5, SEGMENTS)
 	love.graphics.setLineWidth(1)
-	love.graphics.circle('line', x*ZOOM, y*ZOOM, r*ZOOM-.5, SEGMENTS)
-end
-
-function resetFlags ()
-	flags = {}
+	love.graphics.circle('line', x*game.zoom, y*game.zoom, r*game.zoom-.5, SEGMENTS)
 end

@@ -20,8 +20,8 @@ function initTutorialWorld ()
 	--
 	
 	local maxOrbit = 50*7
-	local centerOfTheUniverse = newVector(WORLD_SIZE.width/2, WORLD_SIZE.height/2)
-	local r = math.min(WORLD_SIZE.width, WORLD_SIZE.height)/3
+	local centerOfTheUniverse = newVector(game.world_size.width/2, game.world_size.height/2)
+	local r = math.min(game.world_size.width, game.world_size.height)/3
 	local v = vMul(newVector(math.cos(PI/6), math.sin(PI/6)), r)
 	local location1 = newVector(centerOfTheUniverse.x, centerOfTheUniverse.y-r)
 	local location2 = newVector(centerOfTheUniverse.x + v.x, centerOfTheUniverse.y + v.y)
@@ -47,10 +47,10 @@ function initTutorialWorld ()
 	planets = {}
 	planetConnections = {}
 	
-	local humanHomeWorld = createHomeWorld(sun0, human.colony)
-	human.homeWorld = humanHomeWorld
-	human.selectedPlanet = humanHomeWorld
+	local humanHomeWorld = createHomeWorld(sun0, game.human.colony)
 	humanHomeWorld.orbitVelocity = PI/100
+	game.human.homeWorld = humanHomeWorld
+	game.human.selectedPlanet = humanHomeWorld
 	table.insert(planets, humanHomeWorld)
 	
 	local p1 = newPlanet(sun0)
@@ -85,12 +85,12 @@ function createTutorialMessages()
 	m.selectHomeWorld = newMessage('selectHomeWorld', strings.thisIsHome)
 	m.selectHomeWorld:addButton(strings.clickToSelect)
 	local skipTutorialButton = function (self)
-			TUTORIAL = false
+			game.tutorial = false
 			game:load()
 		end
 	m.selectHomeWorld:addButton('> ' .. strings.skipTutorial, skipTutorialButton)
 	local homePosFunc = function()
-			return unAdjustPos(human.homeWorld.location.x, human.homeWorld.location.y), human.homeWorld.radius*2.5
+			return unAdjustPos(game.human.homeWorld.location.x, game.human.homeWorld.location.y), game.human.homeWorld.radius*2.5
 		end
 	m.selectHomeWorld.hotspot = newHotSpot(homePosFunc)
 	
@@ -99,8 +99,8 @@ function createTutorialMessages()
 	m.makeConnection = newMessage('makeConnection', strings.theseAreSpores)
 	m.makeConnection:addButton(strings.launchSpore)
 	local sporePosFunc = function()
-			local spore = human.homeWorld.spores[1]
-			local sporePos = human.homeWorld:getSporeLocation(spore)
+			local spore = game.human.homeWorld.spores[1]
+			local sporePos = game.human.homeWorld:getSporeLocation(spore)
 			return unAdjustPos(sporePos.x, sporePos.y), UNIT_RADIUS*3
 		end
 	m.makeConnection.hotspot = newHotSpot(sporePosFunc)

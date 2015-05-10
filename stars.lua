@@ -22,7 +22,7 @@ end
 function newStar ()
 	local s = {}
 	
-	s.location = newVector(math.random(0, WORLD_SIZE.width), math.random(0, WORLD_SIZE.height))
+	s.location = newVector(math.random(0, game.world_size.width), math.random(0, game.world_size.height))
 	s.glitter = math.random(60, 150)
 	
 	function s:update ()
@@ -32,8 +32,8 @@ function newStar ()
 	
 	function s:draw ()
 		love.graphics.setColor(255,255,255, self.glitter)
-		--love.graphics.circle('fill', self.location.x*ZOOM, self.location.y*ZOOM, 1)
-		love.graphics.point(self.location.x*ZOOM, self.location.y*ZOOM)
+		--love.graphics.circle('fill', self.location.x*game.zoom, self.location.y*game.zoom, 1)
+		love.graphics.point(self.location.x*game.zoom, self.location.y*game.zoom)
 	end
 	
 	return s

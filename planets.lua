@@ -8,10 +8,10 @@ function initPlanets (numPlanets)
 		if i == 1 then
 			-- create player homeworld
 			planet.isHomeWorld = true
-			planet.startingColony = human.colony
+			planet.startingColony = game.human.colony
 			planet.maxSpores = 6
-			human.homeWorld = planet
-			human.selectedPlanet = planet
+			game.human.homeWorld = planet
+			game.human.selectedPlanet = planet
 		elseif i <= startingColonies then
 			-- create ai homeworlds
 			planet.isHomeWorld = true
@@ -24,8 +24,8 @@ end
 function updatePlanets ()
 	for _, planet in pairs(planets) do
 		planet:update()
-		if planet.isHomeWorld and planet ~= human.homeWorld and planet:onScreen() then
-			flags.enemyHomeInView = true
+		if planet.isHomeWorld and planet ~= game.human.homeWorld and planet:onScreen() then
+			game.flags.enemyHomeInView = true
 		end
 	end
 end
@@ -86,8 +86,8 @@ function newPlanet (sun)
 	end
 	
 	function p:update ()
-		self.rotationAngle = (self.rotationAngle + (self.rotationVelocity / TURN_TIME)) % TAU
-		self.orbitAngle = self.orbitAngle + (self.orbitVelocity / TURN_TIME)
+		self.rotationAngle = (self.rotationAngle + (self.rotationVelocity / game.turn_time)) % TAU
+		self.orbitAngle = self.orbitAngle + (self.orbitVelocity / game.turn_time)
 		self.location = newVector(math.cos(self.orbitAngle) * self.orbitRadius,
 															math.sin(self.orbitAngle) * self.orbitRadius)
 		self.location = vAdd(self.location, self.sun.location)
@@ -99,7 +99,14 @@ function newPlanet (sun)
 			if self.isHomeWorld and spore.colony == self.startingColony then sporesOnHomeworld = sporesOnHomeworld + 1 end
 			sporeWidthSum = sporeWidthSum + spore.width
 		end
-		if self.isHomeWorld and sporesOnHomeworld == 0 then self.isHomeWorld = false end
+		if self.isHomeWorld and sporesOnHomeworld == 0 then
+			self.isHomeWorld = false
+			if game.soundOn and self.startingColony ~= game.human.colony then
+				homeWorldLossSound:setPitch(1*randomRealBetween(.9, 1.1))
+				homeWorldLossSound:play()
+			end
+			game:checkGameOver()
+		end
 		self.sporeWidthAngle = TAU / sporeWidthSum
 
 		for _, spore in pairs(self.sporesOffPlanet) do
@@ -114,17 +121,21 @@ function newPlanet (sun)
 		if self.isHomeWorld then
 			self.startingColony:setToMyColor(150)
 			love.graphics.setLineWidth(1)
-			love.graphics.circle('line', self.location.x*ZOOM, self.location.y*ZOOM, (self.radius+UNIT_RADIUS*4)*ZOOM, SEGMENTS)
+			love.graphics.circle('line', self.location.x*game.zoom, self.location.y*game.zoom, (self.radius+UNIT_RADIUS*4)*game.zoom, SEGMENTS)
 		end
 		
 		love.graphics.setColor(200, 200, 200)
 		drawFilledCircle(self.location.x, self.location.y, self.radius)
+		
+		--love.graphics.setColor(0, 0, 0)
+		--love.graphics.setFont(fontMessageSmallest)
+		--love.graphics.print(self:countFriends(game.human.colony), self.location.x, self.location.y)
 	end
 	
 	function p:drawOrbit ()
 		love.graphics.setColor(255, 255, 255, 10)
 		love.graphics.setLineWidth(1)
-		love.graphics.circle('line', self.sun.location.x*ZOOM, self.sun.location.y*ZOOM, self.orbitRadius*ZOOM, SEGMENTS*2)
+		love.graphics.circle('line', self.sun.location.x*game.zoom, self.sun.location.y*game.zoom, self.orbitRadius*game.zoom, SEGMENTS*2)
 	end
 	
 	function p:drawShadow ()
@@ -263,14 +274,18 @@ function newPlanet (sun)
 		self.shouldCleanupSpores = false
 	end
 	
-	function p:onScreen ()
+	function p:onScreen (lenient)
 		local pos = self.location
 		local v = newVector(pos.x, pos.y)
-		v = vMul(v, ZOOM)
-		v = vAdd(v, OFFSET)
+		v = vMul(v, game.zoom)
+		v = vAdd(v, game.offset)
 		local w = love.graphics.getWidth()
 		local h = love.graphics.getHeight()
-		return v.x > w*.2 and v.x < w*.8 and v.y > h*.2 and v.y < h*.8
+		local isOnScreen = v.x > w*.2 and v.x < w*.8 and v.y > h*.2 and v.y < h*.8
+		if lenient then
+			isOnScreen = v.x > -10 and v.x < w+10 and v.y > -10 and v.y < h+10
+		end
+		return isOnScreen
 	end
 	
 	return p

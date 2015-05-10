@@ -8,14 +8,14 @@ function newConnection (planetA, planetB)
 	planetB.shouldUpdateConnections = true
 	
 	function c:draw ()
-		if self.a == human.selectedPlanet or self.b == human.selectedPlanet then
+		if self.a == game.human.selectedPlanet or self.b == game.human.selectedPlanet then
 			love.graphics.setColor(200, 200, 200)
 			love.graphics.setLineWidth(1.5)
 		else
 			love.graphics.setColor(100, 100, 100)
 		end
 		love.graphics.setLineWidth(1)
-		love.graphics.line(self.a.location.x*ZOOM, self.a.location.y*ZOOM, self.b.location.x*ZOOM, self.b.location.y*ZOOM)
+		love.graphics.line(self.a.location.x*game.zoom, self.a.location.y*game.zoom, self.b.location.x*game.zoom, self.b.location.y*game.zoom)
 	end
 	
 	return c

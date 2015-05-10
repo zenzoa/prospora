@@ -40,6 +40,8 @@ strings = {
 	
 	paused = "Game paused.",
 	returnToGame = "Return to game",
+	fullscreenOn = "Make fullscreen",
+	fullscreenOff = "Exit fullscreen",
 	soundOn = "Turn sound on",
 	soundOff = "Turn sound off",
 	credits = "Credits",

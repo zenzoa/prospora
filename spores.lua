@@ -1,3 +1,5 @@
+--function saveSpores ()
+
 function newSpore (planet, colony, position)
 	local s = {}
 	
@@ -18,12 +20,12 @@ function newSpore (planet, colony, position)
 		end
 		
 		if self.state == 'ready' then
-			local isActing = randomRealBetween(0, TURN_TIME*60) < 1
+			local isActing = randomRealBetween(0, game.turn_time*60) < 1
 			if isActing then
 				local isTraveling = randomRealBetween(0, 1) < self.colony.travel
-				local isConnecting = isTraveling and self.colony ~= human.colony and self.planet:countFriends(self.colony) > 1 and randomRealBetween(0, 2) < self.colony.travel
+				local isConnecting = isTraveling and self.colony ~= game.human.colony and self.planet:countFriends(self.colony) > 1 and randomRealBetween(0, 2) < self.colony.travel
 				local isAttacking = randomRealBetween(0, self.colony.attack + self.colony.spawn) < self.colony.attack
-				if isConnecting and (not TUTORIAL or flags.allowEnemyConnections) then
+				if isConnecting and (not game.tutorial or game.flags.allowEnemyConnections) then
 					self:launchExplorer()
 				elseif isTraveling then
 					if isAttacking then
@@ -58,7 +60,7 @@ function newSpore (planet, colony, position)
 			
 		elseif self.state == 'exploring' then
 			self:updateAnimationCounter()
-			self.location = vAdd(self.location, vDiv(self.velocity, TURN_TIME))
+			self.location = vAdd(self.location, vDiv(self.velocity, game.turn_time))
 			self.width = self.animationCounter
 			if self.animationCounter <= 0 then
 				self.width = 0
@@ -68,9 +70,9 @@ function newSpore (planet, colony, position)
 			if planet and planet ~= self.planet and not areConnected(self.planet, planet) then
 				table.insert(planetConnections, newConnection(self.planet, planet))
 				self.state = 'dead'
-				if self.colony == human.colony then
-					flags.makeConnection = true
-					if soundOn then
+				if self.colony == game.human.colony then
+					game.flags.makeConnection = true
+					if game.soundOn then
 						hitPlanetSound:setPitch(1*randomRealBetween(.9, 1.1))
 						hitPlanetSound:play()
 					end
@@ -87,33 +89,48 @@ function newSpore (planet, colony, position)
 		self.colony:setToMyColor()
 		local radius = UNIT_RADIUS
 		local drawRegularUnit = true
+		--love.graphics.setFont(fontMessageSmallest)
+		
+		if self.colony == game.human.colony then
+			--love.graphics.print('  +', self.location.x, self.location.y)
+		end
 		
 		if self.state == 'ready' then
+			--
+			
 		elseif self.state == 'spawningLocally' then
 			self:spawnLocallyDraw()
+			--love.graphics.print('s', self.location.x, self.location.y)
 			
 		elseif self.state == 'spawningAbroad' then
 			self:spawnAbroadDraw()
+			--love.graphics.print('sa', self.location.x, self.location.y)
 			
 		elseif self.state == 'attackingLocally' then
 			self:attackLocallyDraw()
+			--love.graphics.print('a', self.location.x, self.location.y)
 			
 		elseif self.state == 'attackingAbroad' then
-			drawRegularUnit = false
 			self:attackAbroadDraw()
+			drawRegularUnit = false
+			--love.graphics.print('aa', self.location.x, self.location.y)
 			
 		elseif self.state == 'defendingLocally' then
-			drawRegularUnit = false
 			self:defendLocallyDraw()
+			drawRegularUnit = false
+			--love.graphics.print('d', self.location.x, self.location.y)
 			
 		elseif self.state == 'defendingAbroad' then
 			drawRegularUnit = self:defendAbroadDraw()
+			--love.graphics.print('da', self.location.x, self.location.y)
 			
 		elseif self.state == 'exploring' then
 			radius = radius/2
+			--love.graphics.print('e', self.location.x, self.location.y)
 			
 		elseif self.state == 'placeholder' then
 			drawRegularUnit = false
+			--love.graphics.print('x', self.location.x, self.location.y)
 		end
 		
 		if drawRegularUnit then
@@ -122,11 +139,11 @@ function newSpore (planet, colony, position)
 	end
 	
 	function s:updateAnimationCounter ()
-		self.animationCounter = self.animationCounter - (1/TURN_TIME)
+		self.animationCounter = self.animationCounter - (1/game.turn_time)
 	end
 	
 	function s:launchExplorer ()
-		if self.colony == human.colony then
+		if self.colony == game.human.colony then
 			self:setVelocityTo(adjustPos(love.mouse.getX(), love.mouse.getY()))
 		else
 			self:setCourseTo(self:pickRandomPlanet())
@@ -140,13 +157,17 @@ function newSpore (planet, colony, position)
 	
 	function s:spawnLocally ()
 		if self.planet:isRoomAvailable() then
-			self.state = 'spawnLocally'
+			self.state = 'spawningLocally'
 			self.animationCounter = 1
 			self.child = newSpore(self.planet, self.colony)
 			self.child.state = 'placeholder'
 			self.child.width = 0
 			self.planet:insertSpore(self.position, self.child)
 			self.child.location = self.planet:getSporeLocation(self.child)
+			if game.soundOn and self.planet:onScreen(true) then
+				spawnSound:setPitch(1*randomRealBetween(.9, 1.1))
+				spawnSound:play()
+			end
 		end
 	end
 	function s:spawnLocallyUpdate ()
@@ -154,10 +175,7 @@ function newSpore (planet, colony, position)
 		self.child.width = 1 - self.animationCounter
 		self.child.location = self.planet:getSporeLocation(self.child)
 		if self.animationCounter <= 0 then
-			self.child.state = 'ready'
-			self.child.width = 1
-			self.state = 'ready'
-			self.width = 1
+			self:birth()
 		end
 	end
 	function s:spawnLocallyDraw ()
@@ -175,11 +193,17 @@ function newSpore (planet, colony, position)
 			self.child.state = 'placeholder'
 			self.child.width = 0
 			targetPlanet:insertSpore(1, self.child)
+			self.child.location = self.planet:getSporeLocation(self)
+			if game.soundOn and (self.planet:onScreen(true) or targetPlanet:onScreen(true)) then
+				spawnSound:setPitch(1*randomRealBetween(.9, 1.1))
+				spawnSound:play()
+			end
 		end
 	end
 	function s:spawnAbroadUpdate ()
 		self:updateAnimationCounter()
 		if self.animationCounter > 1.5 then
+			--
 		elseif self.animationCounter > 0 then
 			self.child.width = (1.5 - self.animationCounter)/1.5
 			local d = vSub(self.child.planet.location, self.planet.location)
@@ -188,9 +212,7 @@ function newSpore (planet, colony, position)
 			self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
 			self.child.location = vAdd(self.child.location, self.planet.location)
 		else
-			self.child.state = 'ready'
-			self.child.width = 1
-			self.state = 'ready'
+			self:birth()
 		end
 	end
 	function s:spawnAbroadDraw ()
@@ -210,6 +232,10 @@ function newSpore (planet, colony, position)
 			self.animationCounter = 1
 			self.target.state = 'defendingLocally'
 			self.target.animationCounter = 1
+			if game.soundOn and self.planet:onScreen(true) then
+				attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
+				attackedSound:play()
+			end
 		end
 	end
 	function s:attackLocallyUpdate ()
@@ -229,7 +255,7 @@ function newSpore (planet, colony, position)
 	
 	function s:attackAbroad ()
 		local targetSpore = self.planet:findEnemyAbroad(self.colony)
-		if targetSpore then
+		if targetSpore and self.planet:countFriends(self.colony) > 1 then
 			self.state = 'attackingAbroad'
 			self.animationCounter = 2
 			targetSpore.state = 'defendingAbroad'
@@ -238,6 +264,10 @@ function newSpore (planet, colony, position)
 			self.child.state = 'placeholder'
 			self.child.width = 0
 			targetSpore.planet:insertSpore(targetSpore.position, self.child)
+			if game.soundOn and (self.planet:onScreen(true) or self.child.planet:onScreen(true)) then
+				attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
+				attackedSound:play()
+			end
 		end
 	end
 	function s:attackAbroadUpdate ()
@@ -249,7 +279,7 @@ function newSpore (planet, colony, position)
 			local d = vSub(self.child.planet.location, self.planet.location)
 			local totalDistance = vMag(d)
 			d = vNormalize(d)
-			self.child.location = vMul(d, totalDistance * (1.5 - self.animationCounter)/1.5)
+			self.child.location = vMul(d, totalDistance * (2 - self.animationCounter)/1.5)
 			self.child.location = vAdd(self.child.location, self.planet.location)
 		elseif self.animationCounter <= 0.5 and self.animationCounter > 0 then
 			self.child.state = 'ready'
@@ -270,14 +300,7 @@ function newSpore (planet, colony, position)
 		self:updateAnimationCounter()
 		self.width = self.animationCounter
 		if self.animationCounter <= 0 then
-			self.state = 'dead'
-			if self.colony == human.colony then
-				flags.underAttack = true
-				if soundOn then
-					attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
-					attackedSound:play()
-				end
-			end
+			self:death()
 		end
 	end
 	function s:defendLocallyDraw ()
@@ -291,14 +314,7 @@ function newSpore (planet, colony, position)
 	function s:defendAbroadUpdate ()
 		self:updateAnimationCounter()
 		if self.animationCounter <= 0 then
-			self.state = 'dead'
-			if self.colony == human.colony then
-				flags.underAttack = true
-				if soundOn then
-					attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
-					attackedSound:play()
-				end
-			end
+			self:death()
 		end
 	end
 	function s:defendAbroadDraw ()
@@ -313,13 +329,34 @@ function newSpore (planet, colony, position)
 	
 	--
 	
+	function s:birth ()
+		self.child.state = 'ready'
+		self.child.width = 1
+		self.state = 'ready'
+		self.width = 1
+	end
+	
+	function s:death ()
+		self.state = 'dead'
+		if self.colony == game.human.colony then
+			game.flags.underAttack = true
+			if not self.planet:onScreen(true) then
+				addDeathRipple(self.planet)
+				if game.soundOn then
+					attackedSound:setPitch(1*randomRealBetween(.9, 1.1))
+					attackedSound:play()
+				end
+			end
+		end
+	end
+	
 	function s:pickRandomPlanet ()
 		local weightedPlanets = {}
 		local d = 0
 		for _, planet in pairs(planets) do
 			if self.planet ~= planet and not areConnected(self.planet, planet) then
 				d = vMag(vSub(planet.location, self.planet.location))
-				local worldMag = vMag(newVector(WORLD_SIZE.width, WORLD_SIZE.height))
+				local worldMag = vMag(newVector(game.world_size.width, game.world_size.height))
 				d = (( (worldMag/2 - d) / worldMag )^3)*worldMag
 				d = math.max(math.ceil(d), 1)
 				for i=1, d do

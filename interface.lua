@@ -1,18 +1,3 @@
---[[
-
-Later opens (start up previous game - could be tutorial! - if there is one, or new game if there isn't, paused)
-or Paused:
-Prospora
-- return to game
-- turn sound on/off
-- about
-(make sure these are separated from the main menu options to prevent easy exiting, maybe smaller along bottom of screen)
-- new game
-- new tutorial
-- quit
-
-]]--
-
 function newInterface ()
 	local i = {}
 	
@@ -24,15 +9,7 @@ function newInterface ()
 	i.messages = {}
 	i.allMessages = {}
 	
-	i.titleOpacity = .8
-	
 	function i:update ()
-		if SHOW_LOGO and self.titleOpacity > 0 then
-			self.titleOpacity = self.titleOpacity - 0.003
-		elseif self.titleOpacity <= 0 then
-			SHOW_LOGO = false
-		end
-
 		for _, s in pairs(self.sliders) do
 			s:update()
 		end
@@ -43,7 +20,17 @@ function newInterface ()
 			end
 		end
 		
-		if TUTORIAL then self:checkFlags() end
+		if not game.paused then
+			if game.tutorial then
+				self:checkFlags()
+			else
+				if game.flags.win then
+					self:addMessage(self.allMessages.win)
+				elseif game.flags.lose then
+					self:addMessage(self.allMessages.lose)
+				end
+			end
+		end
 	end
 	
 	function i:draw ()
@@ -53,14 +40,6 @@ function newInterface ()
 	
 		for _, m in pairs(self.messages) do
 			m:draw()
-		end
-		
-		if SHOW_LOGO then
-			love.graphics.setColor(0,0,0, 255*self.titleOpacity)
-			love.graphics.rectangle('fill', 0,0, love.graphics.getWidth(), love.graphics.getHeight())
-			love.graphics.setColor(255, 255, 255, 255*self.titleOpacity)
-			love.graphics.setFont(fontTitle)
-			love.graphics.printf(strings.prospora, 0, love.graphics.getHeight()/2-FONT_SIZE*4, love.graphics.getWidth(), 'center')
 		end
 	end
 	
@@ -97,6 +76,7 @@ function newInterface ()
 				table.remove(self.messages, i)
 			else
 				m.fading = true
+				m.fadeOnClick = false
 			end
 		end
 		newMessage.fading = false
@@ -131,15 +111,29 @@ function newInterface ()
 		m.paused:addButton('> ' .. strings.returnToGame, returnToGameButton)
 		
 		local soundToggleButton = function (self)
-				if soundOn then
-					soundOn = false
+				if game.soundOn then
+					game.soundOn = false
 					self.text = '> ' .. strings.soundOn
 				else
-					soundOn = true
+					game.soundOn = true
 					self.text = '> ' .. strings.soundOff
 				end
 			end
-		m.paused:addButton('> ' .. strings.soundOff, soundToggleButton)
+		local soundToggleString = strings.soundOn
+		if game.soundOn then soundToggleString = strings.soundOff end
+		m.paused:addButton('> ' .. soundToggleString, soundToggleButton)
+		
+		local fullscreenToggleButton = function (self)
+				toggleFullscreen()
+				if game.isFullscreen then
+					self.text = '> ' .. strings.fullscreenOff
+				else
+					self.text = '> ' .. strings.fullscreenOn
+				end
+			end
+		local fullscreenToggleString = strings.fullscreenOn
+		if game.isFullscreen then fullscreenToggleString = strings.fullscreenOff end
+		m.paused:addButton('> ' .. fullscreenToggleString, fullscreenToggleButton)
 		
 		local creditsButton = function (self)
 				-- show credits screen
@@ -147,13 +141,13 @@ function newInterface ()
 		m.paused:addButton('> ' .. strings.credits, creditsButton)
 		
 		local newGameButton = function (self)
-				TUTORIAL = false
+				game = newGame(false)
 				game:load()
 			end
 		m.paused:addButton('< ' .. strings.newGame .. ' >', newGameButton, 'left')
 		
 		local newTutorialButton = function (self)
-				TUTORIAL = true
+				game = newGame(true)
 				game:load()
 			end
 		m.paused:addButton('< ' .. strings.newTutorial .. ' >', newTutorialButton, 'center')
@@ -165,41 +159,70 @@ function newInterface ()
 		
 		--
 		
+		m.win = newMessage('win', strings.win)
+		m.win:addButton('< ' .. strings.newGame .. ' >', newGameButton, 'left')
+		m.win:addButton('< ' .. strings.newTutorial .. ' >', newTutorialButton, 'center')
+		m.win:addButton('< ' .. strings.quit .. ' >', newQuitButton, 'right')
+		
+		--
+		
+		m.lose = newMessage('lose', strings.lose)
+		m.lose:addButton('< ' .. strings.newGame .. ' >', newGameButton, 'left')
+		m.lose:addButton('< ' .. strings.newTutorial .. ' >', newTutorialButton, 'center')
+		m.lose:addButton('< ' .. strings.quit .. ' >', newQuitButton, 'right')
+		
+		--
+		
+		m.winTutorial = newMessage('win', strings.winTutorial)
+		m.winTutorial:addButton('> ' .. strings.restartTutorial, newTutorialButton)
+		m.winTutorial:addButton('> ' .. strings.startFullGame, newGameButton)
+		m.winTutorial:addButton('< ' .. strings.quit .. ' >', newQuitButton, 'right')
+		
+		--
+		
+		m.loseTutorial = newMessage('lose', strings.loseTutorial)
+		m.loseTutorial:addButton('> ' .. strings.restartTutorial, newTutorialButton)
+		m.loseTutorial:addButton('> ' .. strings.startFullGame, newGameButton)
+		m.loseTutorial:addButton('< ' .. strings.quit .. ' >', newQuitButton, 'right')
+		
+		--
+		
 		return m
 	end
 	
 	function i:checkFlags()
-		if flags.selectHomeWorld then
-			flags.allowLaunching = true
+		if game.flags.selectHomeWorld then
+			game.flags.allowLaunching = true
 			if self.messages[1] and self.messages[1].flag == 'selectHomeWorld' then
 				self:addMessage(self.allMessages.makeConnection)
-			elseif flags.makeConnection then
+			elseif game.flags.makeConnection then
 				if self.messages[1] and self.messages[1].flag == 'makeConnection' then
 					self:addMessage(self.allMessages.increaseTravel)
-					flags.increaseTravel = false
-				elseif flags.increaseTravel then
+					game.flags.increaseTravel = false
+				elseif game.flags.increaseTravel then
 					if self.messages[1] and self.messages[1].flag == 'increaseTravel' then
 						self:addMessage(self.allMessages.shiftView)
-					elseif flags.shiftView then
+					elseif game.flags.shiftView then
 						if self.messages[1] and self.messages[1].flag == 'shiftView' then
 							self.messages[1].fading = true
-						elseif flags.enemyHomeInView then
-							flags.allowEnemyConnections = true
+						elseif game.flags.enemyHomeInView then
+							game.flags.allowEnemyConnections = true
 							if not self.allMessages.enemyHomeInView.alreadyShown then
 								self:addMessage(self.allMessages.enemyHomeInView)
 								self.allMessages.enemyHomeInView.alreadyShown = true
 							end
-							if flags.underAttack then
+							if game.flags.underAttack then
 								if not self.allMessages.increaseAttack.alreadyShown then
 									self:addMessage(self.allMessages.increaseAttack)
 									self.allMessages.increaseAttack.alreadyShown = true
-									flags.increaseAttack = false
+									game.flags.increaseAttack = false
 								end
-								if flags.increaseAttack then
+								if game.flags.increaseAttack then
 									if self.messages[1] and self.messages[1].flag == 'increaseAttack' then
 										self:addMessage(self.allMessages.pause)
+										game.flags.pause = false
 									end
-									if flags.pause then
+									if game.flags.pause then
 										if self.messages[1] and self.messages[1].flag == 'pause' then
 											self.messages[1].fading = true
 										end
@@ -210,21 +233,23 @@ function newInterface ()
 					end
 				end
 			end
-			if flags.oneSporeLeft then
+			if game.flags.oneSporeLeft then
 				if not self.messages[1] and not self.allMessages.increaseSpawn.alreadyShown then
 					self:addMessage(self.allMessages.increaseSpawn)
 					self.allMessages.increaseSpawn.alreadyShown = true
-					flags.increaseSpawn = false
+					game.flags.increaseSpawn = false
 				end
-				if flags.increaseSpawn then
+				if game.flags.increaseSpawn then
 					if self.messages[1] and self.messages[1].flag == 'increaseSpawn' then
 						self.messages[1].fading = true
 					end
 				end
 			end
 		end
-		if flags.win then
-		elseif flags.lose then
+		if game.flags.win then
+			self:addMessage(self.allMessages.winTutorial)
+		elseif game.flags.lose then
+			self:addMessage(self.allMessages.loseTutorial)
 		end
 	end
 	
@@ -343,7 +368,7 @@ function newMessage (flag, text)
 					b.pressed = x > love.graphics.getWidth()*.66
 				end
 			end
-			if b.pressed and soundOn then
+			if b.pressed and game.soundOn then
 				buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
 				buttonSound:play()
 			end
@@ -423,7 +448,7 @@ function newHotSpot (positionFunction)
 	
 	function h:press (x, y)
 		self.pressed = true
-		if soundOn then
+		if game.soundOn then
 			buttonSound:setPitch(1*randomRealBetween(.9, 1.1))
 			buttonSound:play()
 		end
@@ -455,18 +480,18 @@ function newSlider (stat, order)
 			local adjTouchX = love.mouse.getX() - self.actArea.width/2
 			local newX = math.max(math.min(adjTouchX, maxWidth), 0)
 			local newGeneStat = newX/maxWidth
-			human.colony[stat] = newGeneStat
-			human.colony:adjustGenes()
+			game.human.colony[stat] = newGeneStat
+			game.human.colony:adjustGenes()
 			if self.stat == 'spawn' then
-				flags.increaseSpawn = true
+				game.flags.increaseSpawn = true
 			elseif self.stat == 'attack' then
-				flags.increaseAttack = true
+				game.flags.increaseAttack = true
 			elseif self.stat == 'travel' then
-				flags.increaseTravel = true
+				game.flags.increaseTravel = true
 			end
 		end
 		
-		self.sliderWidth = human.colony[stat] * maxWidth
+		self.sliderWidth = game.human.colony[stat] * maxWidth
 		self.actArea.x = self.pos.x + self.sliderWidth
 		self.actArea.y = self.pos.y - self.actArea.height/2
 	end
@@ -507,7 +532,7 @@ function newSlider (stat, order)
 	
 	function s:press (x, y)
 		self.pressed = true
-		if soundOn then
+		if game.soundOn then
 			buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
 			buttonSound:play()
 		end

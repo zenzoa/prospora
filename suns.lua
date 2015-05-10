@@ -9,7 +9,7 @@ function initSuns (numSuns)
 		while attempts < MAX_ATTEMPTS do
 			local radius = math.random(20, 50)
 			local orbit = radius * 7
-			local location = newVector(math.random(orbit, WORLD_SIZE.width - orbit), math.random(orbit, WORLD_SIZE.height - orbit))
+			local location = newVector(math.random(orbit, game.world_size.width - orbit), math.random(orbit, game.world_size.height - orbit))
 			s = newSun(location, radius)
 			
 			local overlaps = false
