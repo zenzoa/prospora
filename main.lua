@@ -34,6 +34,7 @@ function love.load()
 	-- setup window
 	love.window.setTitle("Prospora")
 	love.window.setMode(800, 600, {fullscreen=false, fullscreentype='desktop'})
+	love.window.setIcon(love.graphics.newImage('assets/prospora-128x128.png'):getData())
 	love.graphics.setBackgroundColor(0, 0, 0)
 	love.graphics.setLineStyle('smooth')
 	love.graphics.setPointStyle('rough')
