@@ -35,3 +35,7 @@ function randomVector ()
 	local angle = randomRealBetween(0, TAU)
 	return newVector(math.cos(angle), math.sin(angle))
 end
+
+function unitVectorFromAngle (angle)
+	return newVector(math.cos(angle), math.sin(angle))
+end

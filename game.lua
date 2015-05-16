@@ -100,25 +100,27 @@ function newGame (tutorial)
 		
 		local interfaceBusy = self.interface:mousepressed(x, y)
 		
-		if not interfaceBusy and not self.flags.win and not self.flags.lose then
+		if not interfaceBusy then
 			local selectingPlanet = false
-			for _, planet in pairs(planets) do
-				if collidePointCircle(adjPos, planet.location, planet.radius + UNIT_RADIUS*2) then
-					self.human.selectedPlanet = planet
-					selectingPlanet = true
-					local friendsOnPlanet = planet:countFriends(self.human.colony)
-					if friendsOnPlanet > 1 and (not self.tutorial or self.flags.allowLaunching) then
-						self.dragging = 'launch'
-					end
-					if friendsOnPlanet == 1 then
-						self.flags.oneSporeLeft = true
-					end
-					if planet == self.human.homeWorld then
-						self.flags.selectHomeWorld = true
-					end
-					if self.soundOn then
-						selectSound:setPitch(1*randomRealBetween(.9, 1.1))
-						selectSound:play()
+			if not self.flags.win and not self.flags.lose then
+				for _, planet in pairs(planets) do
+					if collidePointCircle(adjPos, planet.location, planet.radius + UNIT_RADIUS*2) then
+						self.human.selectedPlanet = planet
+						selectingPlanet = true
+						local friendsOnPlanet = planet:countFriends(self.human.colony)
+						if friendsOnPlanet > 1 and (not self.tutorial or self.flags.allowLaunching) then
+							self.dragging = 'launch'
+						end
+						if friendsOnPlanet == 1 then
+							self.flags.oneSporeLeft = true
+						end
+						if planet == self.human.homeWorld then
+							self.flags.selectHomeWorld = true
+						end
+						if self.soundOn then
+							selectSound:setPitch(1*randomRealBetween(.9, 1.1))
+							selectSound:play()
+						end
 					end
 				end
 			end
@@ -140,18 +142,22 @@ function newGame (tutorial)
 		if not interfaceBusy and self.dragging == 'launch' and self.human.selectedPlanet then
 			local d = vMul(vSub(adjPos, self.human.selectedPlanet.location), self.zoom)
 			if vMag(d) > self.human.selectedPlanet.radius + UNIT_RADIUS*4 then
-				if self.human.selectedPlanet:countFriends(self.human.colony) > 1 then
-					local spore = self.human.selectedPlanet:findFriend(self.human.colony)
-					spore:launchExplorer()
-					if self.soundOn then
-						launchSound:setPitch(1*randomRealBetween(.9, 1.1))
-						launchSound:play()
-					end
-				end
+				self:launchHumanSpore(adjustPos(love.mouse.getX(), love.mouse.getY()))
 			end
 		end
 		
 		self.dragging = ''
+	end
+	
+	function g:launchHumanSpore (destination)
+		if self.human.selectedPlanet:countFriends(self.human.colony) > 1 then
+			local spore = self.human.selectedPlanet:findFriend(self.human.colony)
+			spore:launchExplorer(destination)
+			if self.soundOn then
+				launchSound:setPitch(1*randomRealBetween(.9, 1.1))
+				launchSound:play()
+			end
+		end
 	end
 	
 	function g:togglePause ()
@@ -245,6 +251,13 @@ function drawHalo (launchPos)
 				d = vAdd(d, p.location)
 				drawFilledCircle(d.x, d.y, UNIT_RADIUS/game.zoom)
 			end
+		elseif not game.paused and love.keyboard.isDown('lshift') then
+			love.graphics.setColor(0, 170, 250)
+			haloRadius = p.radius + (minHalo + maxHalo)/2
+			local d = unitVectorFromAngle(LAUNCH_ANGLE)
+			d = vMul(d, haloRadius)
+			d = vAdd(d, p.location)
+			drawFilledCircle(d.x, d.y, UNIT_RADIUS/game.zoom)
 		else
 			haloRadius = p.radius + minHalo
 		end

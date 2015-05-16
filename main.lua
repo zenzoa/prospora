@@ -1,14 +1,3 @@
---[[
-
-FIX:
-- weird flickering when spawning locally?
-
-TODO:
-- keyboard navigation
-- credits
-
-]]--
-
 require("maths")
 require("vectors")
 require("strings")
@@ -34,6 +23,7 @@ UNIT_RADIUS = 5
 SEGMENTS = 60
 FONT_SIZE = 20
 TITLE_OPACITY = .8
+LAUNCH_ANGLE = TAU*.75
 
 function love.load()
 	
@@ -118,41 +108,82 @@ function love.mousereleased(x, y, button)
 	game:mousereleased(x, y)
 end
 
-function love.keypressed(k)
-	if k == 'left' then
-		if love.keyboard.isDown('shift') then
-		elseif game.paused then
-		else
-			game.offset.x = game.offset.x + 20
-			adjustOffset()
-		end
-		
-	elseif k == 'right' then
-		if love.keyboard.isDown('shift') then
-		elseif game.paused then
-		else
-			game.offset.x = game.offset.x - 20
-			adjustOffset()
-		end
-		
-	elseif k == 'up' then
-		if love.keyboard.isDown('shift') then
-		elseif game.paused then
-		else
-			game.offset.y = game.offset.y + 20
-			adjustOffset()
-		end
-		
-	elseif k == 'down' then
-		if love.keyboard.isDown('shift') then
-		elseif game.paused then
-		else
-			game.offset.y = game.offset.y - 20
-			adjustOffset()
+function love.keyreleased(k)
+	if (k == ' ' or k == 'return') then
+		if not game.paused and (love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
+			local d = unitVectorFromAngle(LAUNCH_ANGLE)
+			d = vMul(d, game.human.selectedPlanet.radius)
+			d = vAdd(d, game.human.selectedPlanet.location)
+			game:launchHumanSpore(d)
+		elseif game.interface.messages[1] and not game.interface.messages[1]:activateSelectedButton() and not game.paused then
+			centerOnSelection()
 		end
 		
 	elseif k == 'escape' then
 		game:togglePause()
+	end
+end
+
+function love.keypressed(k, isRepeat)
+	if k == 'left' then
+		if not game.paused and (love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
+			if isRepeat then
+				LAUNCH_ANGLE = LAUNCH_ANGLE - TAU/33
+			else
+				LAUNCH_ANGLE = LAUNCH_ANGLE - TAU/100
+			end
+		elseif game.interface.messages[1] and game.interface.messages[1]:selectPrevButton() then
+			--
+		elseif not game.paused then
+			game.offset.x = game.offset.x + 20
+			adjustOffset()
+			game.flags.shiftView = true
+		end
+		
+	elseif k == 'right' then
+		if not game.paused and (love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
+			if isRepeat then
+				LAUNCH_ANGLE = LAUNCH_ANGLE + TAU/33
+			else
+				LAUNCH_ANGLE = LAUNCH_ANGLE + TAU/100
+			end
+		elseif game.interface.messages[1] and game.interface.messages[1]:selectNextButton() then
+			--
+		elseif not game.paused then
+			game.offset.x = game.offset.x - 20
+			adjustOffset()
+			game.flags.shiftView = true
+		end
+		
+	elseif k == 'up' then
+		if not game.paused and (love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
+			if isRepeat then
+				LAUNCH_ANGLE = LAUNCH_ANGLE - TAU/33
+			else
+				LAUNCH_ANGLE = LAUNCH_ANGLE - TAU/100
+			end
+		elseif game.interface.messages[1] and game.interface.messages[1]:selectPrevButton() then
+			--
+		elseif not game.paused then
+			game.offset.y = game.offset.y + 20
+			adjustOffset()
+			game.flags.shiftView = true
+		end
+		
+	elseif k == 'down' then
+		if not game.paused and (love.keyboard.isDown('lshift') or love.keyboard.isDown('rshift')) then
+			if isRepeat then
+				LAUNCH_ANGLE = LAUNCH_ANGLE + TAU/33
+			else
+				LAUNCH_ANGLE = LAUNCH_ANGLE + TAU/100
+			end
+		elseif game.interface.messages[1] and game.interface.messages[1]:selectNextButton() then
+			--
+		elseif not game.paused then
+			game.offset.y = game.offset.y - 20
+			adjustOffset()
+			game.flags.shiftView = true
+		end
 		
 	elseif k == 'q' then
 		game.human.colony.attack = game.human.colony.attack * 0.8
@@ -181,7 +212,7 @@ function love.keypressed(k)
 		game.human.colony:adjustGenes()
 		game.flags.increaseTravel = true
 		
-	elseif k == 'tab' then
+	elseif k == 'tab' and not game.paused then
 		local firstPlanet = nil
 		local chooseNextPlanet = false
 		local chosenPlanet = nil
@@ -204,9 +235,6 @@ function love.keypressed(k)
 			game.flags.selectHomeWorld = true
 		end
 		game.human.selectedPlanet = chosenPlanet
-		centerOnSelection()
-		
-	elseif k == ' ' then
 		centerOnSelection()
 	end
 	
@@ -245,6 +273,14 @@ function loadGame ()
 	planets = game.planets
 	planetConnections = game.planetConnections
 	toggleFullscreen(true)
+	if game.soundOn then
+		if game.paused then
+			gameMusic:setVolume(0.5)
+		else
+			gameMusic:setVolume(1)
+		end
+		gameMusic:play()
+	end
 end
 
 function toggleFullscreen (doNotToggle)

@@ -142,9 +142,11 @@ function newSpore (planet, colony, position)
 		self.animationCounter = self.animationCounter - (1/game.turn_time)
 	end
 	
-	function s:launchExplorer ()
+	function s:launchExplorer (destination)
 		if self.colony == game.human.colony then
-			self:setVelocityTo(adjustPos(love.mouse.getX(), love.mouse.getY()))
+			if destination then
+				self:setVelocityTo(destination)
+			end
 		else
 			self:setCourseTo(self:pickRandomPlanet())
 		end

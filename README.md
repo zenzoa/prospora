@@ -1,26 +1,29 @@
 # README #
 
-In Prospora, you control the genetic destiny of a colony of spores trying to overtake a tiny universe. You can change their tendency to attack, spawn, or travel across planetary connections, battling other spore colonies that stand in your way.
+Will your spores thrive... or be driven to extinction? Their destiny is in your hands.
 
-Created with [LÖVE 0.9.1](https://love2d.org/).
+- Control your colony of spores with three genes: attack, spawn, travel.
+- Launch spores to connect to new planets.
+- Defend your homeworld from invaders.
+- Expand your territory and adapt to enemies on multiple fronts.
+- Half an hour of dramatic meditation.
+
+Go forth and conquer a tiny universe.
 
 ### CREDITS ###
 
-Game designed and coded by [Sarah Gould](http://www.zenzoa.com)
+Designed and coded by [Sarah Gould](http://www.zenzoa.com).
 
-**Music from [freemusicarchive.org](http://www.freemusicarchive.org)**
+Created with [LÖVE 0.9.2](https://love2d.org/).
 
-- circuit & unit731 by alg0rh1tm
+Music:
+- ['Circuit' by alg0rh1tm](http://freemusicarchive.org/music/maD__Alg0rh1tm/Clockwork/01_alg0rh1tm_-_Circuit)
+- ['Covered in Oil' by Broke for Free](http://freemusicarchive.org/music/Broke_For_Free/Slam_Funk/Broke_For_Free_-_Slam_Funk_-_10_Covered_In_Oil)
 
-**Sounds from [freesound.org](http://www.freesound.org)**
+Sounds:
+- [btn402 by junggle](http://www.freesound.org/people/junggle/sounds/26777/)
+- [99Sounds Cinematic Sound Effects by Generdyn](http://99sounds.org/free-sound-effects/)
 
-- btn402 by junggle
-- laser by fins (public domain)
-- plink by nickgoa (public domain)
-- staple drop by djtiii (public domain)
-- bass metal thud by daphne in wonderland (public domain)
-
-**Fonts**
-
-- Furore by Jovanny Lemonad
-- Bender by Jovanny Lemonad
+Fonts:
+- [Furore by Jovanny Lemonad](http://www.fontsquirrel.com/fonts/furore)
+- [Bender by Jovanny Lemonad](http://www.fontsquirrel.com/fonts/bender)

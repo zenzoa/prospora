@@ -70,6 +70,17 @@ function newInterface ()
 		return busy
 	end
 	
+	function i:newGame ()
+		self.messages = {}
+		self.allMessages = self:createMessages()
+	end
+	
+	function i:newTutorial ()
+		self.messages = {}
+		self.allMessages = createTutorialMessages()
+		self:addMessage(self.allMessages.selectHomeWorld)
+	end
+	
 	function i:addMessage(newMessage)
 		for i, m in pairs(self.messages) do
 			if m == newMessage then
@@ -81,21 +92,11 @@ function newInterface ()
 		end
 		newMessage.fading = false
 		newMessage.opacity = 1
+		newMessage.selectedButton = 0
 		if newMessage.hotspot then
 			newMessage.hotspot.opacity = 1
 		end
 		table.insert(self.messages, 1, newMessage)
-	end
-	
-	function i:newGame ()
-		self.messages = {}
-		self.allMessages = self:createMessages()
-	end
-	
-	function i:newTutorial ()
-		self.messages = {}
-		self.allMessages = createTutorialMessages()
-		self:addMessage(self.allMessages.selectHomeWorld)
 	end
 	
 	function i:createMessages()
@@ -114,9 +115,11 @@ function newInterface ()
 				if game.soundOn then
 					game.soundOn = false
 					self.text = '> ' .. strings.soundOn
+					gameMusic:pause()
 				else
 					game.soundOn = true
 					self.text = '> ' .. strings.soundOff
+					gameMusic:play()
 				end
 			end
 		local soundToggleString = strings.soundOn
@@ -136,7 +139,9 @@ function newInterface ()
 		m.paused:addButton('> ' .. fullscreenToggleString, fullscreenToggleButton)
 		
 		local creditsButton = function (self)
-				-- show credits screen
+				game.interface.allMessages.credits.fading = false
+				game.interface.allMessages.credits.opacity = 1
+				game.interface.messages[1] = game.interface.allMessages.credits
 			end
 		m.paused:addButton('> ' .. strings.credits, creditsButton)
 		
@@ -184,6 +189,16 @@ function newInterface ()
 		m.loseTutorial:addButton('> ' .. strings.restartTutorial, newTutorialButton)
 		m.loseTutorial:addButton('> ' .. strings.startFullGame, newGameButton)
 		m.loseTutorial:addButton('< ' .. strings.quit .. ' >', newQuitButton, 'right')
+		
+		--
+		
+		m.credits = newMessage('paused', strings.creditsText)
+		local returnButton = function (self)
+				game.interface.allMessages.paused.fading = false
+				game.interface.allMessages.paused.opacity = 1
+				game.interface.messages[1] = game.interface.allMessages.paused
+			end
+		m.credits:addButton('> ' .. 'Return to Menu', returnButton)
 		
 		--
 		
@@ -272,6 +287,59 @@ function newMessage (flag, text)
 	m.menuY = 0
 	m.lineHeight = FONT_SIZE*2
 	
+	m.selectedButton = 0
+	
+	function m:selectNextButton (attempts)
+		self.selectedButton = self.selectedButton + 1
+		if self.selectedButton > tableSize(self.buttons) then
+			self.selectedButton = 0
+		elseif self.selectedButton > 0 and not self.buttons[self.selectedButton].func then
+			if not attempts then attempts = 0 end
+			if attempts < tableSize(self.buttons) then
+				self:selectNextButton(attempts+1)
+			else
+				return false
+			end
+		end
+		if attempts and self.selectedButton == 0 then
+			return false
+		end
+		return true
+	end
+	
+	function m:selectPrevButton (attempts)
+		self.selectedButton = self.selectedButton - 1
+		if self.selectedButton < 0 then
+			self.selectedButton = tableSize(self.buttons)
+		end
+		if self.selectedButton > 0 and not self.buttons[self.selectedButton].func then
+			if not attempts then attempts = 0 end
+			if attempts < tableSize(self.buttons) then
+				self:selectPrevButton(attempts+1)
+			else
+				return false
+			end
+		end
+		if attempts and self.selectedButton == 0 then
+			return false
+		end
+		return true
+	end
+	
+	function m:activateSelectedButton ()
+		if self.selectedButton > 0 and self.selectedButton <= tableSize(self.buttons) then
+			local b = self.buttons[self.selectedButton]
+			if b.func and not self.fading then
+				if game.soundOn then
+					buttonSound:setPitch(1*randomRealBetween(.99, 1.01))
+					buttonSound:play()
+				end
+				b:func()
+			end
+		end
+		self.selectedButton = 0
+	end
+	
 	function m:update ()
 		if self.hotspot then
 			self.hotspot.fading = self.fading
@@ -304,7 +372,7 @@ function newMessage (flag, text)
 		love.graphics.printf(self.text, 100, y, love.graphics.getWidth()-200, 'left')
 		
 		y = y + self.lineHeight*self:countLines()
-		for _, b in pairs(self.buttons) do
+		for i, b in pairs(self.buttons) do
 			if b.align then
 				love.graphics.setFont(fontMessageSmallest)
 			else
@@ -323,6 +391,9 @@ function newMessage (flag, text)
 				end
 			end
 			if hover then
+				self.selectedButton = 0
+			end
+			if hover or (self.selectedButton == i and not self.fading) then
 				love.graphics.setColor(0, 170, 250, 255*self.opacity)
 			else
 				love.graphics.setColor(255,255,255, 255*self.opacity)
@@ -405,7 +476,7 @@ function newMessage (flag, text)
 	end
 	
 	function m:countLines()
-		return 1+select(2, self.text:gsub('\n', '\n'))
+		return math.min(8, 1+select(2, self.text:gsub('\n', '\n')))
 	end
 
 	m:updatePosition()

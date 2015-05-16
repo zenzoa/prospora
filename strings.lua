@@ -48,5 +48,16 @@ strings = {
 	
 	newGame = "New game",
 	newTutorial = "New Tutorial",
-	quit = "Quit"
+	quit = "Quit",
+	
+	creditsText = "Designed and coded by Sarah Gould (www.zenzoa.com)\n\n"
+				.. "Music:\n"
+				.. "- Circuit by alg0rh1tm\n"
+				.. "- Covered in Oil by Broke\n\n"
+				.. "Sounds:\n"
+				.. "- btn402 by junggle\n"
+				.. "- 99Sounds Cinematic Sound Effects by Generdyn\n\n"
+				.. "Fonts:\n"
+				.. "- Furore and Bender by Jovanny Lemonad"
+	
 }
