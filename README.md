@@ -10,6 +10,19 @@ Will your spores thrive... or be driven to extinction? Their destiny is in your 
 
 Go forth and conquer a tiny universe.
 
+### SECRET KEYBOARD COMMANDS ###
+
+You can indeed play Prospora with just the keyboard.
+
+- Arrow keys to move the viewport.
+- Shift + arrow keys to line up a spore launch.
+- Shift + Enter/Space to launch a spore.
+- Tab to cycle the selected planet.
+- Q/W to change Attack.
+- A/S to change Spawn.
+- Z/X to change Travel.
+- ESC to pause.
+
 ### CREDITS ###
 
 Designed and coded by [Sarah Gould](http://www.zenzoa.com).
