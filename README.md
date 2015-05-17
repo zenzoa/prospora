@@ -8,11 +8,13 @@ Will your spores thrive... or be driven to extinction? Their destiny is in your 
 - Expand your territory and adapt to enemies on multiple fronts.
 - Half an hour of dramatic meditation.
 
-Go forth and conquer a tiny universe.
+Conquer a tiny universe.
+
+**[Check out the game's homepage and help support Prospora.](http://sarahgould.itch.io/prospora)**
 
 ### SECRET KEYBOARD COMMANDS ###
 
-You can indeed play Prospora with just the keyboard.
+While the tutorial teaches you how to play using the mouse, you can play Prospora with the keyboard:
 
 - Arrow keys to move the viewport.
 - Shift + arrow keys to line up a spore launch.
